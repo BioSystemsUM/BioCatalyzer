@@ -24,7 +24,7 @@ setup(
     long_description_content_type='text/markdown',
     entry_points={
         'console_scripts': [
-            'BioCatalyzer = biocatalyzer.cli:main',
+            'biocatalyzer=biocatalyzer.cli:main',
         ]
     },
 )
