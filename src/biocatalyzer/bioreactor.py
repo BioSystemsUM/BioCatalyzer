@@ -19,12 +19,12 @@ class BioReactor:
 
     def __init__(self,
                  compounds_path: str,
-                 reaction_rules_path: str,
-                 coreactants_path: str,
-                 molecules_to_remove_path: str,
-                 patterns_to_remove_path: str,
-                 min_atom_count: int,
                  output_path: str,
+                 reaction_rules_path: str = 'data/reactionrules/all_reaction_rules.tsv',
+                 coreactants_path: str = 'data/coreactants/all_coreactants.tsv',
+                 molecules_to_remove_path: str = 'data/molecules_to_remove/molecules_to_remove.tsv',
+                 patterns_to_remove_path: str = 'data/patterns_to_remove/patterns_to_remove.smi',
+                 min_atom_count: int = 5,
                  n_jobs: int = 1):
         """
         Initialize the BioReactor class.
@@ -33,6 +33,8 @@ class BioReactor:
         ----------
         compounds_path: str
             The path to the file containing the compounds to use as reactants.
+        output_path: str
+            The path directory to save the results to.
         reaction_rules_path: str
             The path to the file containing the reaction rules to use.
         coreactants_path: str
@@ -41,8 +43,8 @@ class BioReactor:
             The path to the file containing the molecules to remove from the products.
         patterns_to_remove_path: str
             The path to the file containing the patterns to remove from the products.
-        output_path: str
-            The path to the output directory.
+        min_atom_count: int
+            The minimum number of heavy atoms a product must have.
         n_jobs: int
             The number of jobs to run in parallel.
         """
@@ -246,11 +248,11 @@ class BioReactor:
 
 if __name__ == '__main__':
     br = BioReactor(compounds_path='data/compounds/drugs.csv',
+                    output_path='results/',
                     reaction_rules_path='data/reactionrules/all_reaction_rules.tsv',
                     coreactants_path='data/coreactants/all_coreactants.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
-                    output_path='results',
                     n_jobs=12)
     br.react()
