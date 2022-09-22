@@ -1,0 +1,11 @@
+compound_id	smiles
+cpd00067	[H+]
+cpd01569	O=C1C=CC=CC1=O
+cpd00084	N[C@@H](CS)C(=O)O
+cpd00039	NCCCC[C@H](N)C(=O)O
+cf00001	O=C1C=CC(=O)C=C1
+cpd00025	OO
+cf00003	[O]N=O
+cpd00071	CC=O
+NADH_CoF	NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)(O)O)[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1
+O2	O=O

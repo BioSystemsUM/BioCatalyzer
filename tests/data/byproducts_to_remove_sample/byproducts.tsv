@@ -1,0 +1,10 @@
+compound_id	smiles
+Phosphate trianion	O=P([O-])([O-])[O-]
+Hydrogen phosphate dianion	O=P([O-])([O-])O
+(2-hydroxyethyl)trimethylammonium	C[N+](C)(C)CCO
+Ethanolamine	NCCO
+Diphosphate	O=P([O-])([O-])OP(=O)([O-])[O-]
+Hydrogen diphosphate trianion	O=P([O-])([O-])OP(=O)([O-])O
+2-Oxoglutarate dianion	O=C([O-])CCC(=O)C(=O)[O-]
+Acetate ion	CC(=O)[O-]
+Pyruvate	CC(=O)C(=O)[O-]

@@ -1,0 +1,9 @@
+pattern_id	smarts
+CoA	O=C(NCC*)CCNC(=O)C(O)C(C)(C)COP(=O)(*)OP(=O)(*)OC*3O*(n2cnc1c(ncnc12)N)*(O)*3OP(=O)(*)*
+NAD	**1*(*)*(COP(*)(=O)OP(*)(=O)OC*2O*(*)*(*)*2*)O*1*
+ATP, ADP, GTP, ...	**1*(*)*(O*1COP(*)(=O)O)[R]
+Adenosine-3'-5'-diphosphate and similar molecules	*P(*)(=O)O*1*(*)*(*)O[*]1COP(*)(*)=O
+S-Adenosyl methionine et al.	**1*(*)*(O*1CS*)[R]
+Flavin compounds	**1**2**3*(**(=O)**3=O)*(*)*2**1*
+Hemes	*~1~*~*~2~*~*~1~*~*~1~*~*~*(~*~*~3~*~*~*(~*~*~4~*~*~*(~*~2)~*~4)~*~3)~*~1
+Iron-sulfur cluster(s)	S1[Fe]S[Fe]1
