@@ -23,6 +23,7 @@ class BioReactor:
                  coreactants_path: str,
                  molecules_to_remove_path: str,
                  patterns_to_remove_path: str,
+                 min_atom_count: int,
                  output_path: str,
                  n_jobs: int = 1):
         """
@@ -54,6 +55,7 @@ class BioReactor:
         self._coreactants = Loaders.load_coreactants(coreactants_path)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(patterns_to_remove_path)
+        self._min_atom_count = min_atom_count
         self._output_path = output_path
         self._n_jobs = n_jobs
         self._new_products = set()
@@ -131,11 +133,33 @@ class BioReactor:
         """
         mol = MolFromSmiles(smiles)
         if not mol:
-            return False
+            return True
         for bp in self._patterns_to_remove:
             if mol.HasSubstructMatch(bp):
                 return True
         return False
+
+    def _min_atom_count_filter(self, smiles: str):
+        """
+        Check if mol has at least the minimum number of atoms.
+
+        Parameters
+        ----------
+        smiles: str
+            The smiles to check.
+
+        Returns
+        -------
+        bool
+            True if mol has at least the minimum number of atoms, False otherwise.
+        """
+        mol = MolFromSmiles(smiles)
+        if not mol:
+            return False
+        if mol.GetNumHeavyAtoms() >= self._min_atom_count:
+            return True
+        else:
+            return False
 
     def _match_byproducts(self, smiles: str):
         """
@@ -189,8 +213,11 @@ class BioReactor:
                             elif p[-1] == ')':
                                 p = p[:-1]
                         if p not in self._new_products:
+                            # because multiprocessing is used, this does not guarantee that the same product will not
+                            # be added multiple times
                             self._new_products.add(p)
-                            if not self._match_byproducts(p) and not self._match_patterns(p): #TODO: add parameter to remove molecules with len < X
+                            if not self._match_byproducts(p) and not self._match_patterns(p) \
+                                    and self._min_atom_count_filter(p):
                                 nc.write(f"{smiles_id}_{smarts_id}_{i}\t{p}\n")
                                 i += 1
 
@@ -223,6 +250,7 @@ if __name__ == '__main__':
                     coreactants_path='data/coreactants/all_coreactants.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
+                    min_atom_count=5,
                     output_path='results',
                     n_jobs=12)
     br.react()
