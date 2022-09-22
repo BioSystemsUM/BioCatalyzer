@@ -19,6 +19,7 @@ class ChemUtils:
         ----------
         mol: Mol
             The molecule to convert.
+
         Returns
         -------
         str
@@ -77,6 +78,7 @@ class ChemUtils:
     def react(smiles: Union[str, List[str]], smarts: str):
         """
         Reacts a molecule with a reaction.
+
         Parameters
         ----------
         smiles: Union[str, List[str]]
@@ -99,7 +101,22 @@ class ChemUtils:
         return ChemUtils._create_reaction_instances(reaction, mol)
 
     @staticmethod
-    def _create_reaction_instances(rxn, reactants):
+    def _create_reaction_instances(rxn: ChemicalReaction, reactants: List[Mol]):
+        """
+        Creates reaction smiles from a reaction and a list of reactants.
+
+        Parameters
+        ----------
+        rxn: ChemicalReaction
+            The reaction.
+        reactants: List[Mol]
+            The reactants.
+
+        Returns
+        -------
+        list of str
+            The list of reaction smiles.
+        """
         res = []
         ps = rxn.RunReactants(reactants)
         for pset in ps:
