@@ -15,7 +15,7 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - 3.10
+          - 3.8
 
     steps:
       - uses: actions/checkout@v3
@@ -33,8 +33,6 @@ jobs:
           pip install tox tox-gh-actions
 
       - name: Test with tox
-        run: |
-          eval `ssh-agent -s`
-          ssh-add - <<< '${{ secrets.MACHINE_USER_SHH_KEY }}'
-          tox
+        run:
+          tox -e py
 
