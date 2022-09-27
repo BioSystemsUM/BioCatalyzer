@@ -9,7 +9,7 @@ def readme():
 setup(
     name='BioCatalyzer',
     version='0.0.1',
-    python_requires='>=3.6',
+    python_requires='>=3.10',
     package_dir={'': 'src'},
     packages=find_packages('src'),
     include_package_data=True,
