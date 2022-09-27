@@ -9,6 +9,7 @@ class MockBioReactor(BioReactor):
     @staticmethod
     def _verify_files(paths: List[str]):
         """
+        Mock method.
         Verify that the provided paths to the files exist.
 
         Parameters
