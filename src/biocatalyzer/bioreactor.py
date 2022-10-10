@@ -176,6 +176,22 @@ class BioReactor:
         else:
             return False
 
+    def _get_ec_numbers(self, reaction_rule_id: str):
+        """
+        Get the EC numbers associated with a reaction rule.
+
+        Parameters
+        ----------
+        reaction_rule_id: str
+            The reaction rule id.
+
+        Returns
+        -------
+        str
+            The EC numbers associated with the reaction rule.
+        """
+        return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
+
     def _react_single(self, smiles: str, smarts: str):
         """
         React a single compound with a single reaction rule.
@@ -214,7 +230,8 @@ class BioReactor:
                             self._new_products.add(p)
                             if not self._match_byproducts(p) and not self._match_patterns(p) \
                                     and self._min_atom_count_filter(p):
-                                nc.write(f"{id_result}\t{id_result}_{i}\t{p}\n")
+                                ecs = self._get_ec_numbers(smarts_id)
+                                nc.write(f"{id_result}\t{id_result}_{i}\t{p}\t{ecs}\n")
                                 i += 1
 
     def react(self):
