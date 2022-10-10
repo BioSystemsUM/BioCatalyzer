@@ -131,3 +131,6 @@ dmypy.json
 .idea/
 
 src/biocatalyzer/results/*
+
+src/biocatalyzer/data/reactionrules/all_reaction_rules_old.tsv
+src/biocatalyzer/data/all_reaction_rules.tsv
