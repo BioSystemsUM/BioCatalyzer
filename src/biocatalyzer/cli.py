@@ -12,6 +12,12 @@ from biocatalyzer.bioreactor import BioReactor
                 type=click.Path(),
                 required=True,
                 )
+@click.option("--organisms",
+              "organisms",
+              type=click.Path(exists=True),
+              default=None,
+              help="The path to the file containing the organisms that must be used to filter the reaction rules.",
+              )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",
               type=click.Path(exists=True),
@@ -42,6 +48,7 @@ from biocatalyzer.bioreactor import BioReactor
               )
 def main(compounds,
          output_path,
+         organisms,
          patterns_to_remove,
          molecules_to_remove,
          min_atom_count,
@@ -54,6 +61,7 @@ def main(compounds,
     """
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
+                    organisms_path=organisms,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,

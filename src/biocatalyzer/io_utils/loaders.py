@@ -30,7 +30,7 @@ class Loaders:
         return compounds[['compound_id', 'smiles']]
 
     @staticmethod
-    def load_reaction_rules():
+    def load_reaction_rules(orgs='ALL'):
         """
         Load the reaction rules to use.
 
@@ -39,7 +39,35 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the reaction rules to use.
         """
-        return pd.read_csv('data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv', header=0, sep='\t')
+        rules = pd.read_csv('data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv',
+                            header=0,
+                            sep='\t')
+
+        def match_org(value, orgs_list):
+            if isinstance(value, str):
+                if any(s in value.split(';') for s in orgs_list):
+                    return True
+            return False
+
+        if not isinstance(orgs, str):
+            rules['has_org'] = rules.apply(lambda x: match_org(x['Organisms'], orgs), axis=1)
+            rules = rules[rules['has_org']]
+        return rules
+
+    @staticmethod
+    def load_organisms(path):
+        """
+        Load the organisms to use.
+
+        Returns
+        -------
+        pd.DataFrame:
+            pandas dataframe with the organisms to use.
+        """
+        orgs = pd.read_csv(path, header=0, sep='\t')
+        if 'org_id' not in orgs.columns:
+            raise ValueError('The organisms file must contain a column named "org_id".')
+        return orgs.org_id.values
 
     @staticmethod
     def load_coreactants():

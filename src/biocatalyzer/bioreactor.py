@@ -20,6 +20,7 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
+                 organisms_path: str = None,
                  molecules_to_remove_path: str = 'data/molecules_to_remove/molecules_to_remove.tsv',
                  patterns_to_remove_path: str = 'data/patterns_to_remove/patterns_to_remove.smi',
                  min_atom_count: int = 5,
@@ -33,6 +34,8 @@ class BioReactor:
             The path to the file containing the compounds to use as reactants.
         output_path: str
             The path directory to save the results to.
+        organisms_path: str
+            The path to the file containing the organisms to filter the reaction rules by.
         molecules_to_remove_path: str
             The path to the file containing the molecules to remove from the products.
         patterns_to_remove_path: str
@@ -47,7 +50,11 @@ class BioReactor:
         self._verify_files([compounds_path])
         self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(compounds_path)
-        self._reaction_rules = Loaders.load_reaction_rules()
+        if organisms_path:
+            orgs = list(Loaders.load_organisms(organisms_path))
+            self._reaction_rules = Loaders.load_reaction_rules(orgs=orgs)
+        else:
+            self._reaction_rules = Loaders.load_reaction_rules(orgs='ALL')
         self._coreactants = Loaders.load_coreactants()
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(patterns_to_remove_path)
@@ -260,6 +267,7 @@ class BioReactor:
 if __name__ == '__main__':
     br = BioReactor(compounds_path='data/compounds/drugs.csv',
                     output_path='results/',
+                    organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
