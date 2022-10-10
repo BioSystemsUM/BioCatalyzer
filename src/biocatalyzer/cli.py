@@ -12,20 +12,6 @@ from biocatalyzer.bioreactor import BioReactor
                 type=click.Path(),
                 required=True,
                 )
-@click.option("--reaction_rules",
-              "reaction_rules",
-              type=click.Path(exists=True),
-              default="data/reactionrules/all_reaction_rules.tsv",
-              show_default=True,
-              help="Path to the file containing the reaction rules to use.",
-              )
-@click.option("--coreactants",
-              "coreactants",
-              type=click.Path(exists=True),
-              default="data/coreactants/all_coreactants.tsv",
-              show_default=True,
-              help="Path to the file containing the coreactants to use.",
-              )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",
               type=click.Path(exists=True),
@@ -56,8 +42,6 @@ from biocatalyzer.bioreactor import BioReactor
               )
 def main(compounds,
          output_path,
-         reaction_rules,
-         coreactants,
          patterns_to_remove,
          molecules_to_remove,
          min_atom_count,
@@ -70,8 +54,6 @@ def main(compounds,
     """
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
-                    reaction_rules_path=reaction_rules,
-                    coreactants_path=coreactants,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
