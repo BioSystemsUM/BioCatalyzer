@@ -20,8 +20,6 @@ class TestBioReactor(BioReactorTestCase, TestCase):
 
     def test_bioreactor(self):
         br = BioReactor(compounds_path='tests/data/compounds_sample/compounds.tsv',
-                        reaction_rules_path='tests/data/reaction_rules_sample/reactionrules.tsv',
-                        coreactants_path='tests/data/coreactants_sample/coreactants.tsv',
                         patterns_to_remove_path='tests/data/patterns_to_remove_sample/patterns.tsv',
                         molecules_to_remove_path='tests/data/byproducts_to_remove_sample/byproducts.tsv',
                         output_path=self.output_folder,
