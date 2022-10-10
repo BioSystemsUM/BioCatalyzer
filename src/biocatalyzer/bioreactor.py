@@ -20,8 +20,6 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
-                 reaction_rules_path: str = 'data/reactionrules/all_reaction_rules.tsv',
-                 coreactants_path: str = 'data/coreactants/all_coreactants.tsv',
                  molecules_to_remove_path: str = 'data/molecules_to_remove/molecules_to_remove.tsv',
                  patterns_to_remove_path: str = 'data/patterns_to_remove/patterns_to_remove.smi',
                  min_atom_count: int = 5,
@@ -35,10 +33,6 @@ class BioReactor:
             The path to the file containing the compounds to use as reactants.
         output_path: str
             The path directory to save the results to.
-        reaction_rules_path: str
-            The path to the file containing the reaction rules to use.
-        coreactants_path: str
-            The path to the file containing the coreactants to use.
         molecules_to_remove_path: str
             The path to the file containing the molecules to remove from the products.
         patterns_to_remove_path: str
@@ -50,11 +44,11 @@ class BioReactor:
         """
         # silence RDKit logger
         RDLogger.DisableLog('rdApp.*')
-        self._verify_files([compounds_path, reaction_rules_path, coreactants_path])
+        self._verify_files([compounds_path])
         self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(compounds_path)
-        self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path)
-        self._coreactants = Loaders.load_coreactants(coreactants_path)
+        self._reaction_rules = Loaders.load_reaction_rules()
+        self._coreactants = Loaders.load_coreactants()
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(patterns_to_remove_path)
         self._min_atom_count = min_atom_count
@@ -182,6 +176,22 @@ class BioReactor:
         else:
             return False
 
+    def _get_ec_numbers(self, reaction_rule_id: str):
+        """
+        Get the EC numbers associated with a reaction rule.
+
+        Parameters
+        ----------
+        reaction_rule_id: str
+            The reaction rule id.
+
+        Returns
+        -------
+        str
+            The EC numbers associated with the reaction rule.
+        """
+        return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
+
     def _react_single(self, smiles: str, smarts: str):
         """
         React a single compound with a single reaction rule.
@@ -194,18 +204,18 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
-        reactants_ids = self._reaction_rules[self._reaction_rules.smarts == smarts].coreactants_ids.values[0]
+        reactants_ids = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = self._set_reactants(reactants_ids, smiles)
         results = ChemUtils.react(reactants, smarts)
         if len(results) > 0:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
-            smarts_id = self._reaction_rules[self._reaction_rules.smarts == smarts].rule_id.values[0]
-            reaction_info = self._reaction_rules[self._reaction_rules.smarts == smarts].reaction_info.values[0]
+            smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
             with open(self._output_path + '/results.tsv', 'a') as rs, \
                     open(self._output_path + '/new_compounds.tsv', 'a') as nc:
                 i = 0
-                for result in results:
-                    rs.write(f"{smiles_id}\t{smarts_id}\t{result}\t{reaction_info}\n")
+                for i, result in enumerate(results):
+                    id_result = f"{smiles_id}_{smarts_id}_{i}"
+                    rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
                     products = result.split('>')[-1].split('.')
                     for p in products:
                         # deal with cases where invalid number of parentheses are present
@@ -220,7 +230,8 @@ class BioReactor:
                             self._new_products.add(p)
                             if not self._match_byproducts(p) and not self._match_patterns(p) \
                                     and self._min_atom_count_filter(p):
-                                nc.write(f"{smiles_id}_{smarts_id}_{i}\t{p}\n")
+                                ecs = self._get_ec_numbers(smarts_id)
+                                nc.write(f"{id_result}\t{id_result}_{i}\t{p}\t{ecs}\n")
                                 i += 1
 
     def react(self):
@@ -230,12 +241,12 @@ class BioReactor:
         t0 = time.time()
         with open(self._output_path + '/results.tsv', 'w') as rs, \
                 open(self._output_path + '/new_compounds.tsv', 'w') as nc:
-            rs.write('id_mol\tid_rule\tnew_reaction_smiles\treaction_info\n')
-            nc.write('new_compound_id\tnew_compound_smiles\n')
+            rs.write('id_result\tid_mol\tid_rule\tnew_reaction_smiles\n')
+            nc.write('id_result\tnew_compound_id\tnew_compound_smiles\n')
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
                 pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
-                                                     self._reaction_rules.smarts))
+                                                     self._reaction_rules.SMARTS))
         # TODO: change this later
         results = pd.read_csv(self._output_path + '/new_compounds.tsv', sep='\t')
         results.drop_duplicates(inplace=True, subset=['new_compound_smiles'])
@@ -249,8 +260,6 @@ class BioReactor:
 if __name__ == '__main__':
     br = BioReactor(compounds_path='data/compounds/drugs.csv',
                     output_path='results/',
-                    reaction_rules_path='data/reactionrules/all_reaction_rules.tsv',
-                    coreactants_path='data/coreactants/all_coreactants.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,

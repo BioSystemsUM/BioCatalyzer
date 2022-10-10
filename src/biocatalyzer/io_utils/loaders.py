@@ -30,52 +30,28 @@ class Loaders:
         return compounds[['compound_id', 'smiles']]
 
     @staticmethod
-    def load_reaction_rules(path):
+    def load_reaction_rules():
         """
         Load the reaction rules to use.
-
-        Parameters
-        ----------
-        path: str
-            Path to the reaction rules.
 
         Returns
         -------
         pd.DataFrame:
             pandas dataframe with the reaction rules to use.
         """
-        rules = pd.read_csv(path, header=0, sep='\t')
-        if 'rule_id' not in rules.columns:
-            raise ValueError('The reaction rules file must contain a column named "rule_id".')
-        if 'smarts' not in rules.columns:
-            raise ValueError('The reaction rules file must contain a column named "smarts".')
-        if 'coreactants_ids' not in rules.columns:
-            raise ValueError('The reaction rules file must contain a column named "coreactants_ids".')
-        if 'reaction_info' not in rules.columns:
-            raise ValueError('The reaction rules file must contain a column named "reaction_info".')
-        return rules[['rule_id', 'smarts', 'coreactants_ids', 'reaction_info']]
+        return pd.read_csv('data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv', header=0, sep='\t')
 
     @staticmethod
-    def load_coreactants(path):
+    def load_coreactants():
         """
         Load the coreactants to use.
-
-        Parameters
-        ----------
-        path: str
-            Path to the coreactants.
 
         Returns
         -------
         pd.DataFrame:
             pandas dataframe with the coreactants to use.
         """
-        coreactants = pd.read_csv(path, header=0, sep='\t')
-        if 'compound_id' not in coreactants.columns:
-            raise ValueError('The coreactants file must contain a column named "compound_id".')
-        if 'smiles' not in coreactants.columns:
-            raise ValueError('The coreactants file must contain a column named "smiles".')
-        return coreactants[['compound_id', 'smiles']]
+        return pd.read_csv('data/coreactants/all_coreactants.tsv', header=0, sep='\t')
 
     @staticmethod
     def load_byproducts_to_remove(path):
