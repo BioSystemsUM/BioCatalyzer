@@ -9,3 +9,9 @@ cf00003	[O]N=O
 cpd00071	CC=O
 NADH_CoF	NC(=O)C1=CN([C@@H]2O[C@H](COP(=O)(O)OP(=O)(O)OC[C@H]3O[C@@H](n4cnc5c(N)ncnc54)[C@H](OP(=O)(O)O)[C@@H]3O)[C@@H](O)[C@H]2O)C=CC1
 O2	O=O
+cpd00001	O
+cpd00007	O=O
+cpd01569	O=C1C=CC=CC1=O
+cpd00039	NCCCC[C@H](N)C(=O)O
+cf00001	O=C1C=CC(=O)C=C1
+cpd00428	CC(=O)C=O
