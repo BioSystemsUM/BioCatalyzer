@@ -20,6 +20,9 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
+                 reaction_rules_path: str = 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv',
+                 coreactants_path: str = 'data/coreactants/all_coreactants.tsv',
+                 organisms_path: str = None,
                  molecules_to_remove_path: str = 'data/molecules_to_remove/molecules_to_remove.tsv',
                  patterns_to_remove_path: str = 'data/patterns_to_remove/patterns_to_remove.smi',
                  min_atom_count: int = 5,
@@ -33,6 +36,12 @@ class BioReactor:
             The path to the file containing the compounds to use as reactants.
         output_path: str
             The path directory to save the results to.
+        reaction_rules_path: str
+            The path to the file containing the reaction rules to use.
+        coreactants_path: str
+            The path to the file containing the coreactants to use.
+        organisms_path: str
+            The path to the file containing the organisms to filter the reaction rules by.
         molecules_to_remove_path: str
             The path to the file containing the molecules to remove from the products.
         patterns_to_remove_path: str
@@ -44,11 +53,18 @@ class BioReactor:
         """
         # silence RDKit logger
         RDLogger.DisableLog('rdApp.*')
-        self._verify_files([compounds_path])
+        if organisms_path:
+            self._verify_files([compounds_path, reaction_rules_path, coreactants_path, organisms_path,
+                                molecules_to_remove_path, patterns_to_remove_path])
+            orgs = list(Loaders.load_organisms(organisms_path))
+            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=orgs)
+        else:
+            self._verify_files([compounds_path, reaction_rules_path, coreactants_path, molecules_to_remove_path,
+                                patterns_to_remove_path])
+            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs='ALL')
         self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(compounds_path)
-        self._reaction_rules = Loaders.load_reaction_rules()
-        self._coreactants = Loaders.load_coreactants()
+        self._coreactants = Loaders.load_coreactants(coreactants_path)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(patterns_to_remove_path)
         self._min_atom_count = min_atom_count
@@ -260,6 +276,7 @@ class BioReactor:
 if __name__ == '__main__':
     br = BioReactor(compounds_path='data/compounds/drugs.csv',
                     output_path='results/',
+                    organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
