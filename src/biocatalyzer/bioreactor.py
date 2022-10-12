@@ -7,7 +7,7 @@ import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
 
-from biocatalyzer._utils import ChemUtils
+from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 
 
@@ -70,8 +70,6 @@ class BioReactor:
         self._min_atom_count = min_atom_count
         self._output_path = output_path
         self._n_jobs = n_jobs
-        # TODO: deal with mp not guaranteeing unique results
-        self._new_products = set()
 
     @staticmethod
     def _verify_files(paths: List[str]):
@@ -225,14 +223,14 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
+        nc = pd.DataFrame(columns=['ResultID', 'NewCompoundID', 'NewCompoundSMILES', 'EC_Numbers'])
         reactants_ids = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = self._set_reactants(reactants_ids, smiles)
         results = ChemUtils.react(reactants, smarts)
         if len(results) > 0:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
             smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
-            with open(self._output_path + '/results.tsv', 'a') as rs, \
-                    open(self._output_path + '/new_compounds.tsv', 'a') as nc:
+            with open(self._output_path + '/results.tsv', 'a') as rs:
                 i = 0
                 for i, result in enumerate(results):
                     id_result = f"{smiles_id}_{smarts_id}_{i}"
@@ -245,41 +243,36 @@ class BioReactor:
                                 p = p[1:]
                             elif p[-1] == ')':
                                 p = p[:-1]
-                        if p not in self._new_products:
-                            # because multiprocessing is used, this does not guarantee that the same product will not
-                            # be added multiple times
-                            self._new_products.add(p)
+                        if p not in nc.NewCompoundSMILES.values:
                             if not self._match_byproducts(p) and not self._match_patterns(p) \
                                     and self._min_atom_count_filter(p):
                                 ecs = self._get_ec_numbers(smarts_id)
-                                nc.write(f"{id_result}\t{id_result}_{i}\t{p}\t{ecs}\n")
+                                nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", p, ecs]
                                 i += 1
+        return nc
 
     def react(self):
         """
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
-        with open(self._output_path + '/results.tsv', 'w') as rs, \
-                open(self._output_path + '/new_compounds.tsv', 'w') as nc:
-            rs.write('id_result\tid_mol\tid_rule\tnew_reaction_smiles\n')
-            nc.write('id_result\tnew_compound_id\tnew_compound_smiles\tec_numbers\n')
+        with open(self._output_path + '/results.tsv', 'w') as rs:
+            rs.write('ResultID\tCompoundID\tRuleID\tNewReactionSmiles\n')
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
-                pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
-                                                     self._reaction_rules.SMARTS))
-        # TODO: change this later
-        results = pd.read_csv(self._output_path + '/new_compounds.tsv', sep='\t')
-        results.drop_duplicates(inplace=True, subset=['new_compound_smiles'])
-        results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
+                results = pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
+                                                               self._reaction_rules.SMARTS))
 
+        results = pd.concat(results)
+        results = results.drop_duplicates(subset=['NewCompoundSMILES'])
+        results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
         t1 = time.time()
         print(f"{results.shape[0]} unique new compounds generated!")
         print(f"Time elapsed: {t1 - t0} seconds")
 
 
 if __name__ == '__main__':
-    br = BioReactor(compounds_path='data/compounds/drugs.csv',
+    br = BioReactor(compounds_path='data/compounds/drugs_paper_subset.csv',
                     output_path='results/results_test_12_10_2022/',
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
