@@ -20,11 +20,11 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
-                 reaction_rules_path: str = 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv',
-                 coreactants_path: str = 'data/coreactants/all_coreactants.tsv',
+                 reaction_rules_path: str = None,
+                 coreactants_path: str = None,
                  organisms_path: str = None,
-                 molecules_to_remove_path: str = 'data/molecules_to_remove/molecules_to_remove.tsv',
-                 patterns_to_remove_path: str = 'data/patterns_to_remove/patterns_to_remove.smi',
+                 molecules_to_remove_path: str = None,
+                 patterns_to_remove_path: str = None,
                  min_atom_count: int = 5,
                  n_jobs: int = 1):
         """
@@ -53,23 +53,43 @@ class BioReactor:
         """
         # silence RDKit logger
         RDLogger.DisableLog('rdApp.*')
-        if organisms_path:
-            self._verify_files([compounds_path, reaction_rules_path, coreactants_path, organisms_path,
-                                molecules_to_remove_path, patterns_to_remove_path])
-            orgs = list(Loaders.load_organisms(organisms_path))
-            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=orgs)
-        else:
-            self._verify_files([compounds_path, reaction_rules_path, coreactants_path, molecules_to_remove_path,
-                                patterns_to_remove_path])
-            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs='ALL')
-        self._set_output_path(output_path)
-        self._compounds = Loaders.load_compounds(compounds_path)
-        self._coreactants = Loaders.load_coreactants(coreactants_path)
-        self._molecules_to_remove = Loaders.load_byproducts_to_remove(molecules_to_remove_path)
-        self._patterns_to_remove = Loaders.load_patterns_to_remove(patterns_to_remove_path)
-        self._min_atom_count = min_atom_count
+        self._compounds_path = compounds_path
         self._output_path = output_path
-        self._n_jobs = n_jobs
+        self._reaction_rules_path = reaction_rules_path
+        self._coreactants_path = coreactants_path
+        self._organisms_path = organisms_path
+        self._molecules_to_remove_path = molecules_to_remove_path
+        self._patterns_to_remove_path = patterns_to_remove_path
+        self._set_up_files()
+        self._orgs = Loaders.load_organisms(self._organisms_path)
+        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+        self._set_output_path(self._output_path)
+        self._compounds = Loaders.load_compounds(self._compounds_path)
+        self._coreactants = Loaders.load_coreactants(self._coreactants_path)
+        self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
+        self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
+        self._min_atom_count = min_atom_count
+        if n_jobs == -1:
+            self._n_jobs = multiprocessing.cpu_count()
+        else:
+            self._n_jobs = n_jobs
+
+    def _set_up_files(self):
+        self.DATA_FILES = os.path.join(os.path.dirname(__file__), 'data')
+        if not self._reaction_rules_path:
+            self._reaction_rules_path = os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
+        if not self._coreactants_path:
+            self._coreactants_path = os.path.join(self.DATA_FILES, 'coreactants/all_coreactants.tsv')
+        if not self._molecules_to_remove_path:
+            self._molecules_to_remove_path = os.path.join(self.DATA_FILES, 'byproducts_to_remove/byproducts.tsv')
+        if not self._patterns_to_remove_path:
+            self._patterns_to_remove_path = os.path.join(self.DATA_FILES, 'patterns_to_remove/patterns.tsv')
+        if self._organisms_path:
+            self._verify_files([self._compounds_path, self._reaction_rules_path, self._coreactants_path,
+                                self._organisms_path, self._molecules_to_remove_path, self._patterns_to_remove_path])
+        else:
+            self._verify_files([self._compounds_path, self._reaction_rules_path, self._coreactants_path,
+                                self._molecules_to_remove_path, self._patterns_to_remove_path])
 
     @staticmethod
     def _verify_files(paths: List[str]):
@@ -273,7 +293,7 @@ class BioReactor:
 
 if __name__ == '__main__':
     br = BioReactor(compounds_path='data/compounds/drugs_paper_subset.csv',
-                    output_path='results/results_test_12_10_2022/',
+                    output_path='results/results_example/',
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
