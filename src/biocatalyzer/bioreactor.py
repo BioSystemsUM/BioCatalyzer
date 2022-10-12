@@ -70,6 +70,7 @@ class BioReactor:
         self._min_atom_count = min_atom_count
         self._output_path = output_path
         self._n_jobs = n_jobs
+        # TODO: deal with mp not guaranteeing unique results
         self._new_products = set()
 
     @staticmethod
@@ -99,6 +100,10 @@ class BioReactor:
         """
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+        else:
+            if os.path.exists(output_path + '/results.tsv') or os.path.exists(output_path + '/new_compounds.tsv'):
+                raise FileExistsError(f"File {output_path} already exists. Define a different output path so that "
+                                      f"previous results are not overwritten.")
 
     def _set_reactants(self, reactants: str, compound: str):
         """
@@ -234,7 +239,7 @@ class BioReactor:
                     rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
                     products = result.split('>')[-1].split('.')
                     for p in products:
-                        # deal with cases where invalid number of parentheses are present
+                        # deal with cases where invalid number of parentheses are generated
                         if (p.count('(') + p.count(')')) % 2 != 0:
                             if p[0] == '(':
                                 p = p[1:]
@@ -258,7 +263,7 @@ class BioReactor:
         with open(self._output_path + '/results.tsv', 'w') as rs, \
                 open(self._output_path + '/new_compounds.tsv', 'w') as nc:
             rs.write('id_result\tid_mol\tid_rule\tnew_reaction_smiles\n')
-            nc.write('id_result\tnew_compound_id\tnew_compound_smiles\n')
+            nc.write('id_result\tnew_compound_id\tnew_compound_smiles\tec_numbers\n')
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
                 pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
@@ -275,7 +280,7 @@ class BioReactor:
 
 if __name__ == '__main__':
     br = BioReactor(compounds_path='data/compounds/drugs.csv',
-                    output_path='results/',
+                    output_path='results/results_test_12_10_2022/',
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
