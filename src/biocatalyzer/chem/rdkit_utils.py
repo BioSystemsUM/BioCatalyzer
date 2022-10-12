@@ -1,7 +1,8 @@
 from typing import Union, List
 
 from rdkit import Chem
-from rdkit.Chem import MolFromSmiles, Mol, MolToSmiles, RemoveHs, AllChem
+from rdkit.Chem import MolFromSmiles, Mol, MolToSmiles, RemoveHs, AllChem, Descriptors
+from rdkit.Chem.MolStandardize.rdMolStandardize import Uncharger
 from rdkit.Chem.rdChemReactions import ReactionFromSmarts, ChemicalReaction
 
 
@@ -98,7 +99,11 @@ class ChemUtils:
         reaction = ChemUtils._smarts_to_reaction(smarts)
         if None in mol or reaction is None:
             return []
-        return ChemUtils._create_reaction_instances(reaction, mol)
+        try:
+            return ChemUtils._create_reaction_instances(reaction, mol)
+        except ValueError as e:
+            print(e)
+            return None
 
     @staticmethod
     def _create_reaction_instances(rxn: ChemicalReaction, reactants: List[Mol]):
@@ -127,3 +132,42 @@ class ChemUtils:
                 tres.AddReactantTemplate(ChemUtils._remove_hs(reactant))
             res.append(tres)
         return list(set([AllChem.ReactionToSmiles(entry, canonical=True) for entry in res]))
+
+    @staticmethod
+    def uncharge_smiles(smiles):
+        """
+        Uncharges a molecule.
+
+        Parameters
+        ----------
+        smiles: str
+            The molecule smiles to uncharge.
+        Returns
+        -------
+        str
+            The uncharged molecule smiles.
+        """
+        mol = MolFromSmiles(smiles)
+        if mol:
+            uncharger = Uncharger()
+            return MolToSmiles(uncharger.uncharge(mol))
+        return None
+
+    @staticmethod
+    def calc_exact_mass(smiles):
+        """
+        Calculates the exact mass of a molecule.
+
+        Parameters
+        ----------
+        smiles: str
+            The molecule smiles to calculate the exact mass.
+        Returns
+        -------
+        float
+            The exact mass.
+        """
+        mol = MolFromSmiles(smiles)
+        if mol:
+            return Descriptors.ExactMolWt(mol)
+        return None
