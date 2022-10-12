@@ -29,6 +29,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                         n_jobs=12)
         br.react()
 
+    def test_bioreactor_all_orgs(self):
         br_no_orgs_filter = BioReactor(compounds_path='tests/data/compounds_sample/compounds.tsv',
                                        reaction_rules_path='tests/data/reaction_rules_sample/reactionrules.tsv',
                                        coreactants_path='tests/data/coreactants_sample/coreactants.tsv',
