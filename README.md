@@ -1,6 +1,14 @@
 # BioCatalyzer
 ...
 
+## Resources:
+
+Paper [Mapping human microbiome drug metabolism by gut bacteria and their genes](https://www.nature.com/articles/s41586-019-1291-3)
+
+Supplementary data [here](https://www.nature.com/articles/s41586-019-1291-3#Sec53)!
+
+
+
 ## Command Line Interface
 
 Usage of the script:
