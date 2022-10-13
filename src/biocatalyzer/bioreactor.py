@@ -26,6 +26,8 @@ class BioReactor:
                  molecules_to_remove_path: str = None,
                  patterns_to_remove_path: str = None,
                  min_atom_count: int = 5,
+                 masses_to_match: str = None,
+                 mass_tolerance: float = 0.02,
                  n_jobs: int = 1):
         """
         Initialize the BioReactor class.
@@ -48,6 +50,10 @@ class BioReactor:
             The path to the file containing the patterns to remove from the products.
         min_atom_count: int
             The minimum number of heavy atoms a product must have.
+        masses_to_match: str
+            The path to the masses to match the products.
+        mass_tolerance: float
+            The mass tolerance to use when matching the masses.
         n_jobs: int
             The number of jobs to run in parallel.
         """
@@ -60,15 +66,18 @@ class BioReactor:
         self._organisms_path = organisms_path
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
+        self._masses_to_match = masses_to_match
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
         self._set_output_path(self._output_path)
         self._compounds = Loaders.load_compounds(self._compounds_path)
+        self._masses = Loaders.load_masses_to_match(self._masses_to_match)
         self._coreactants = Loaders.load_coreactants(self._coreactants_path)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
         self._min_atom_count = min_atom_count
+        self._mass_tolerance = mass_tolerance
         if n_jobs == -1:
             self._n_jobs = multiprocessing.cpu_count()
         else:
@@ -77,34 +86,14 @@ class BioReactor:
     def _set_up_files(self):
         self.DATA_FILES = os.path.join(os.path.dirname(__file__), 'data')
         if not self._reaction_rules_path:
-            self._reaction_rules_path = os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
+            self._reaction_rules_path = \
+                os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         if not self._coreactants_path:
             self._coreactants_path = os.path.join(self.DATA_FILES, 'coreactants/all_coreactants.tsv')
         if not self._molecules_to_remove_path:
             self._molecules_to_remove_path = os.path.join(self.DATA_FILES, 'byproducts_to_remove/byproducts.tsv')
         if not self._patterns_to_remove_path:
             self._patterns_to_remove_path = os.path.join(self.DATA_FILES, 'patterns_to_remove/patterns.tsv')
-        if self._organisms_path:
-            self._verify_files([self._compounds_path, self._reaction_rules_path, self._coreactants_path,
-                                self._organisms_path, self._molecules_to_remove_path, self._patterns_to_remove_path])
-        else:
-            self._verify_files([self._compounds_path, self._reaction_rules_path, self._coreactants_path,
-                                self._molecules_to_remove_path, self._patterns_to_remove_path])
-
-    @staticmethod
-    def _verify_files(paths: List[str]):
-        """
-        Verify that the provided paths to the files exist.
-
-        Parameters
-        ----------
-        paths: List[str]
-            The paths to the files to verify.
-        """
-        for path in paths:
-            if path:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"File {path} not found.")
 
     @staticmethod
     def _set_output_path(output_path: str):
@@ -243,7 +232,7 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
-        nc = pd.DataFrame(columns=['ResultID', 'NewCompoundID', 'NewCompoundSMILES', 'EC_Numbers'])
+        nc = pd.DataFrame(columns=['ResultID', 'NewCompoundID', 'NewCompoundExactMass', 'NewCompoundSMILES', 'EC_Numbers'])
         reactants_ids = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = self._set_reactants(reactants_ids, smiles)
         results = ChemUtils.react(reactants, smarts)
@@ -251,10 +240,9 @@ class BioReactor:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
             smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
             with open(self._output_path + '/results.tsv', 'a') as rs:
-                i = 0
                 for i, result in enumerate(results):
                     id_result = f"{smiles_id}_{smarts_id}_{i}"
-                    rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
+                    new_product_generated = False
                     products = result.split('>')[-1].split('.')
                     for p in products:
                         # deal with cases where invalid number of parentheses are generated
@@ -264,11 +252,15 @@ class BioReactor:
                             elif p[-1] == ')':
                                 p = p[:-1]
                         if p not in nc.NewCompoundSMILES.values:
-                            if not self._match_byproducts(p) and not self._match_patterns(p) \
-                                    and self._min_atom_count_filter(p):
-                                ecs = self._get_ec_numbers(smarts_id)
-                                nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", p, ecs]
-                                i += 1
+                            match_mass, mass = ChemUtils.match_masses(p, self._masses, self._mass_tolerance)
+                            if match_mass:
+                                if not self._match_byproducts(p) and not self._match_patterns(p) \
+                                        and self._min_atom_count_filter(p):
+                                    ecs = self._get_ec_numbers(smarts_id)
+                                    nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
+                                    new_product_generated = True
+                    if new_product_generated:
+                        rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
         return nc
 
     def react(self):
@@ -298,5 +290,6 @@ if __name__ == '__main__':
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
+                    masses_to_match='444.19515386008993;370.17950379609;336.17402449209',
                     n_jobs=12)
     br.react()
