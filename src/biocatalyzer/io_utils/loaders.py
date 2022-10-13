@@ -83,10 +83,12 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the organisms to use.
         """
+        if not path:
+            return 'ALL'
         orgs = pd.read_csv(path, header=0, sep='\t')
         if 'org_id' not in orgs.columns:
             raise ValueError('The organisms file must contain a column named "org_id".')
-        return orgs.org_id.values
+        return list(orgs.org_id.values)
 
     @staticmethod
     def load_coreactants(path='data/coreactants/all_coreactants.tsv'):
