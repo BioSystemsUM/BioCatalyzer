@@ -32,6 +32,25 @@ class ChemUtils:
             return None
 
     @staticmethod
+    def validate_smiles(smiles: List[str]):
+        """
+        Validates a list of SMILES.
+
+        Parameters
+        ----------
+        smiles: List[str]
+            The SMILES to validate.
+
+        Returns
+        -------
+        List[str]
+            The valid SMILES.
+        """
+        if all(MolFromSmiles(v) is None for v in smiles):
+            return False
+        return True
+
+    @staticmethod
     def _smarts_to_reaction(reaction_smarts: str):
         """
         Converts a SMARTS string to a reaction.
@@ -54,17 +73,17 @@ class ChemUtils:
     @staticmethod
     def _remove_hs(mol: Mol):
         """
-        Removes hydrogens from a molecule.
+        Removes hydrogen atoms from a molecule.
 
         Parameters
         ----------
         mol: Mol
-            The molecule to remove hydrogens from.
+            The molecule to remove hydrogen atoms from.
 
         Returns
         -------
         Mol
-            The molecule wit implicit hydrogens.
+            The molecule wit implicit hydrogen atoms.
         """
         try:
             return RemoveHs(mol)
@@ -134,9 +153,9 @@ class ChemUtils:
         return list(set([AllChem.ReactionToSmiles(entry, canonical=True) for entry in res]))
 
     @staticmethod
-    def uncharge_smiles(smiles):
+    def uncharge_smiles(smiles: str):
         """
-        Uncharges a molecule.
+        Neutralizes a molecule.
 
         Parameters
         ----------
@@ -154,7 +173,7 @@ class ChemUtils:
         return None
 
     @staticmethod
-    def calc_exact_mass(smiles):
+    def calc_exact_mass(smiles: str):
         """
         Calculates the exact mass of a molecule.
 
@@ -169,5 +188,15 @@ class ChemUtils:
         """
         mol = MolFromSmiles(smiles)
         if mol:
-            return Descriptors.ExactMolWt(mol)
+            return round(Descriptors.ExactMolWt(mol), 4)
         return None
+
+    @staticmethod
+    def match_masses(smiles, masses, mass_tolerance):
+        mass = ChemUtils.calc_exact_mass(smiles)
+        if masses is None:
+            return True, mass
+        if mass:
+            any_found = any(mass - mass_tolerance <= m <= mass + mass_tolerance for m in masses)
+            return any_found, mass
+        return False, mass

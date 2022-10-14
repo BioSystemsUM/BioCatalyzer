@@ -5,7 +5,7 @@ from biocatalyzer.bioreactor import BioReactor
 
 @click.command()
 @click.argument("compounds",
-                type=click.Path(exists=True),
+                type=str,
                 required=True,
                 )
 @click.argument("output_path",
@@ -51,6 +51,20 @@ from biocatalyzer.bioreactor import BioReactor
               show_default=True,
               help="The minimum atom count of a molecule (molecules with less atoms are removed from the products).",
               )
+@click.option("--masses",
+              "masses",
+              type=str,
+              default=None,
+              show_default=True,
+              help="A user defined file containing masses to match. Only products that match a mass will be kept.",
+              )
+@click.option("--mass_tolerance",
+              "mass_tolerance",
+              type=float,
+              default=0.02,
+              show_default=True,
+              help="The mass tolerance to use when matching masses.",
+              )
 @click.option("--n_jobs",
               "n_jobs",
               type=int,
@@ -66,6 +80,8 @@ def main(compounds,
          patterns_to_remove,
          molecules_to_remove,
          min_atom_count,
+         masses,
+         mass_tolerance,
          n_jobs):
     """Run the biocatalyzer.
 
@@ -83,6 +99,8 @@ def main(compounds,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
+                    masses=masses,
+                    mass_tolerance=mass_tolerance,
                     n_jobs=n_jobs)
     br.react()
 
