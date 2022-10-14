@@ -83,7 +83,7 @@ class TestChemUtils(TestCase):
                 self.assertEqual(at.GetFormalCharge(), 0)
 
         invalid_smiles = '[NH3+]CC[O-]]'
-        self.assertIsNone(ChemUtils.uncharge_smiles(invalid_smiles))
+        self.assertEqual(ChemUtils.uncharge_smiles(invalid_smiles), '[NH3+]CC[O-]]')
 
     def test_calc_exact_mass(self):
         smiles = ['[NH3+]CC[O-]', 'CC(=O)O[IH2+2](O)OC(C)=O', '[NH3+]CC([O-])C[O-]', 'NCCO']
