@@ -1,13 +1,13 @@
 import multiprocessing
 import os
 import time
-from typing import List
+from typing import List, Union
 
 import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
 
-from biocatalyzer._utils import ChemUtils
+from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 
 
@@ -20,12 +20,14 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
-                 reaction_rules_path: str = 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv',
-                 coreactants_path: str = 'data/coreactants/all_coreactants.tsv',
+                 reaction_rules_path: str = None,
+                 coreactants_path: str = None,
                  organisms_path: str = None,
-                 molecules_to_remove_path: str = 'data/molecules_to_remove/molecules_to_remove.tsv',
-                 patterns_to_remove_path: str = 'data/patterns_to_remove/patterns_to_remove.smi',
+                 molecules_to_remove_path: Union[str, None] = 'default',
+                 patterns_to_remove_path: Union[str, None] = 'default',
                  min_atom_count: int = 5,
+                 masses: str = None,
+                 mass_tolerance: float = 0.02,
                  n_jobs: int = 1):
         """
         Initialize the BioReactor class.
@@ -48,44 +50,50 @@ class BioReactor:
             The path to the file containing the patterns to remove from the products.
         min_atom_count: int
             The minimum number of heavy atoms a product must have.
+        masses: str
+            The path to the masses to match the products.
+        mass_tolerance: float
+            The mass tolerance to use when matching the masses.
         n_jobs: int
             The number of jobs to run in parallel.
         """
         # silence RDKit logger
         RDLogger.DisableLog('rdApp.*')
-        if organisms_path:
-            self._verify_files([compounds_path, reaction_rules_path, coreactants_path, organisms_path,
-                                molecules_to_remove_path, patterns_to_remove_path])
-            orgs = list(Loaders.load_organisms(organisms_path))
-            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=orgs)
-        else:
-            self._verify_files([compounds_path, reaction_rules_path, coreactants_path, molecules_to_remove_path,
-                                patterns_to_remove_path])
-            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs='ALL')
-        self._set_output_path(output_path)
-        self._compounds = Loaders.load_compounds(compounds_path)
-        self._coreactants = Loaders.load_coreactants(coreactants_path)
-        self._molecules_to_remove = Loaders.load_byproducts_to_remove(molecules_to_remove_path)
-        self._patterns_to_remove = Loaders.load_patterns_to_remove(patterns_to_remove_path)
-        self._min_atom_count = min_atom_count
+        self._compounds_path = compounds_path
         self._output_path = output_path
-        self._n_jobs = n_jobs
-        self._new_products = set()
+        self._reaction_rules_path = reaction_rules_path
+        self._coreactants_path = coreactants_path
+        self._organisms_path = organisms_path
+        self._molecules_to_remove_path = molecules_to_remove_path
+        self._patterns_to_remove_path = patterns_to_remove_path
+        self._masses_to_match = masses
+        self._set_up_files()
+        self._orgs = Loaders.load_organisms(self._organisms_path)
+        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+        self._set_output_path(self._output_path)
+        self._compounds = Loaders.load_compounds(self._compounds_path)
+        self._masses = Loaders.load_masses_to_match(self._masses_to_match)
+        self._coreactants = Loaders.load_coreactants(self._coreactants_path)
+        self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
+        self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
+        self._min_atom_count = min_atom_count
+        self._mass_tolerance = mass_tolerance
+        if n_jobs == -1:
+            self._n_jobs = multiprocessing.cpu_count()
+        else:
+            self._n_jobs = n_jobs
 
-    @staticmethod
-    def _verify_files(paths: List[str]):
-        """
-        Verify that the provided paths to the files exist.
-
-        Parameters
-        ----------
-        paths: List[str]
-            The paths to the files to verify.
-        """
-        for path in paths:
-            if path:
-                if not os.path.exists(path):
-                    raise FileNotFoundError(f"File {path} not found.")
+    def _set_up_files(self):
+        self.DATA_FILES = os.path.join(os.path.dirname(__file__), 'data')
+        if not self._reaction_rules_path:
+            self._reaction_rules_path = \
+                os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
+        if not self._coreactants_path:
+            self._coreactants_path = os.path.join(self.DATA_FILES, 'coreactants/all_coreactants.tsv')
+        if self._molecules_to_remove_path == 'default':
+            self._molecules_to_remove_path = os.path.join(self.DATA_FILES, 'byproducts_to_remove/byproducts.tsv')
+        if self._patterns_to_remove_path == 'default':
+            self._patterns_to_remove_path = os.path.join(self.DATA_FILES, 'patterns_to_remove/patterns.tsv')
 
     @staticmethod
     def _set_output_path(output_path: str):
@@ -99,6 +107,10 @@ class BioReactor:
         """
         if not os.path.exists(output_path):
             os.makedirs(output_path)
+        else:
+            if os.path.exists(output_path + '/results.tsv') or os.path.exists(output_path + '/new_compounds.tsv'):
+                raise FileExistsError(f"File {output_path} already exists. Define a different output path so that "
+                                      f"previous results are not overwritten.")
 
     def _set_reactants(self, reactants: str, compound: str):
         """
@@ -143,6 +155,8 @@ class BioReactor:
         bool
             True if mol matches patterns to remove, False otherwise.
         """
+        if len(self._patterns_to_remove) == 0:
+            return False
         mol = MolFromSmiles(smiles)
         if not mol:
             return True
@@ -187,6 +201,8 @@ class BioReactor:
         bool
             True if mol matches byproducts to remove, False otherwise.
         """
+        if len(self._molecules_to_remove) == 0:
+            return False
         if smiles in self._molecules_to_remove:
             return True
         else:
@@ -220,65 +236,72 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
+        nc = pd.DataFrame(columns=['ResultID', 'NewCompoundID', 'NewCompoundExactMass', 'NewCompoundSMILES', 'EC_Numbers'])
         reactants_ids = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = self._set_reactants(reactants_ids, smiles)
         results = ChemUtils.react(reactants, smarts)
         if len(results) > 0:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
             smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
-            with open(self._output_path + '/results.tsv', 'a') as rs, \
-                    open(self._output_path + '/new_compounds.tsv', 'a') as nc:
-                i = 0
+            with open(self._output_path + '/results.tsv', 'a') as rs:
                 for i, result in enumerate(results):
                     id_result = f"{smiles_id}_{smarts_id}_{i}"
-                    rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
+                    new_product_generated = False
                     products = result.split('>')[-1].split('.')
                     for p in products:
-                        # deal with cases where invalid number of parentheses are present
+                        # deal with cases where invalid number of parentheses are generated
                         if (p.count('(') + p.count(')')) % 2 != 0:
                             if p[0] == '(':
                                 p = p[1:]
                             elif p[-1] == ')':
                                 p = p[:-1]
-                        if p not in self._new_products:
-                            # because multiprocessing is used, this does not guarantee that the same product will not
-                            # be added multiple times
-                            self._new_products.add(p)
-                            if not self._match_byproducts(p) and not self._match_patterns(p) \
-                                    and self._min_atom_count_filter(p):
-                                ecs = self._get_ec_numbers(smarts_id)
-                                nc.write(f"{id_result}\t{id_result}_{i}\t{p}\t{ecs}\n")
-                                i += 1
+                        if p not in nc.NewCompoundSMILES.values:
+                            if self._masses:
+                                match_mass, mass = ChemUtils.match_masses(p, self._masses, self._mass_tolerance)
+                                if match_mass:
+                                    if not self._match_byproducts(p) and not self._match_patterns(p) \
+                                            and self._min_atom_count_filter(p):
+                                        ecs = self._get_ec_numbers(smarts_id)
+                                        nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
+                                        new_product_generated = True
+                            else:
+                                if not self._match_byproducts(p) and not self._match_patterns(p) \
+                                        and self._min_atom_count_filter(p):
+                                    ecs = self._get_ec_numbers(smarts_id)
+                                    mass = ChemUtils.calc_exact_mass(p)
+                                    nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
+                                    new_product_generated = True
+                    if new_product_generated:
+                        rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
+        return nc
 
     def react(self):
         """
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
-        with open(self._output_path + '/results.tsv', 'w') as rs, \
-                open(self._output_path + '/new_compounds.tsv', 'w') as nc:
-            rs.write('id_result\tid_mol\tid_rule\tnew_reaction_smiles\n')
-            nc.write('id_result\tnew_compound_id\tnew_compound_smiles\n')
+        with open(self._output_path + '/results.tsv', 'w') as rs:
+            rs.write('ResultID\tCompoundID\tRuleID\tNewReactionSmiles\n')
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
-                pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
-                                                     self._reaction_rules.SMARTS))
-        # TODO: change this later
-        results = pd.read_csv(self._output_path + '/new_compounds.tsv', sep='\t')
-        results.drop_duplicates(inplace=True, subset=['new_compound_smiles'])
-        results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
+                results = pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
+                                                               self._reaction_rules.SMARTS))
 
+        results = pd.concat(results)
+        results = results.drop_duplicates(subset=['NewCompoundSMILES'])
+        results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
         t1 = time.time()
         print(f"{results.shape[0]} unique new compounds generated!")
         print(f"Time elapsed: {t1 - t0} seconds")
 
 
 if __name__ == '__main__':
-    br = BioReactor(compounds_path='data/compounds/drugs.csv',
-                    output_path='results/',
+    br = BioReactor(compounds_path='data/compounds/drugs_paper_subset.csv',
+                    output_path='results/results_example/',
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
+                    masses='444.19515386008993;370.17950379609;336.17402449209',
                     n_jobs=12)
     br.react()
