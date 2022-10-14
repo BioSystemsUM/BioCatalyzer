@@ -108,6 +108,8 @@ class Loaders:
             if 'org_id' not in orgs.columns:
                 raise ValueError('The organisms file must contain a column named "org_id".')
             return list(orgs.org_id.values)
+        elif len(path.split('.')) > 1:
+            raise FileNotFoundError(f"File {path} not found.")
         else:
             return path.split(';')
 
@@ -200,7 +202,10 @@ class Loaders:
                 raise ValueError('The masses file must contain a column named "mass".')
             return list(masses['mass'].values)
         else:
-            return [float(m) for m in masses.split(';')]
+            try:
+                return [float(m) for m in masses.split(';')]
+            except ValueError:
+                raise ValueError('The masses must be an existing file or a list of numbers separated by ";".')
 
     @staticmethod
     def _verify_file(path: str):
