@@ -15,6 +15,9 @@ class LoadersTestCase(TestCase):
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         self.assertRaises(ValueError, Loaders.load_compounds, reaction_rules_path)
 
+        invalid_path = 'asdasdas.tsv'
+        self.assertRaises(FileNotFoundError, Loaders.load_compounds, invalid_path)
+
     def test_load_reaction_rules(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
@@ -26,6 +29,9 @@ class LoadersTestCase(TestCase):
 
         self.assertRaises(ValueError, Loaders.load_reaction_rules, compounds_path)
 
+        invalid_path = 'asdasdas.tsv'
+        self.assertRaises(FileNotFoundError, Loaders.load_reaction_rules, invalid_path)
+
     def test_load_organisms(self):
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         organisms_path = os.path.join(TESTS_DATA_PATH, 'organisms_sample/organisms_to_use.tsv')
@@ -33,6 +39,9 @@ class LoadersTestCase(TestCase):
         self.assertEqual(len(orgs), 2)
 
         self.assertRaises(ValueError, Loaders.load_organisms, reaction_rules_path)
+
+        invalid_path = 'asdasdas.tsv'
+        self.assertRaises(FileNotFoundError, Loaders.load_organisms, invalid_path)
 
     def test_load_coreactants(self):
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
@@ -42,6 +51,9 @@ class LoadersTestCase(TestCase):
 
         self.assertRaises(ValueError, Loaders.load_coreactants, reaction_rules_path)
 
+        invalid_path = 'asdasdas.tsv'
+        self.assertRaises(FileNotFoundError, Loaders.load_coreactants, invalid_path)
+
     def test_load_byproducts_to_remove(self):
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         molecules_to_remove_path = os.path.join(TESTS_DATA_PATH, 'byproducts_to_remove_sample/byproducts.tsv')
@@ -50,6 +62,9 @@ class LoadersTestCase(TestCase):
 
         self.assertRaises(ValueError, Loaders.load_byproducts_to_remove, reaction_rules_path)
 
+        invalid_path = 'asdasdas.tsv'
+        self.assertRaises(FileNotFoundError, Loaders.load_byproducts_to_remove, invalid_path)
+
     def test_load_patterns_to_remove(self):
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         patterns_to_remove_path = os.path.join(TESTS_DATA_PATH, 'patterns_to_remove_sample/patterns.tsv')
@@ -57,3 +72,19 @@ class LoadersTestCase(TestCase):
         self.assertEqual(len(patterns), 8)
 
         self.assertRaises(ValueError, Loaders.load_patterns_to_remove, reaction_rules_path)
+
+        invalid_path = 'asdasdas.tsv'
+        self.assertRaises(FileNotFoundError, Loaders.load_patterns_to_remove, invalid_path)
+
+    def test_load_masses(self):
+        reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
+        masses_path = os.path.join(TESTS_DATA_PATH, 'masses_example/masses.tsv')
+        masses = Loaders.load_masses_to_match(masses=masses_path)
+        self.assertEqual(len(masses), 3)
+
+        self.assertRaises(ValueError, Loaders.load_masses_to_match, reaction_rules_path)
+
+        masses = Loaders.load_masses_to_match(masses='444.1951;370.1795;336.1740')
+        self.assertEqual(len(masses), 3)
+
+        self.assertRaises(ValueError, Loaders.load_masses_to_match, 'asdasda.tsv')
