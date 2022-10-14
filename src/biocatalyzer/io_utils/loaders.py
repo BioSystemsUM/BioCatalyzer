@@ -12,7 +12,7 @@ class Loaders:
     """
 
     @staticmethod
-    def load_compounds(path):
+    def load_compounds(path: str, neutralize: bool = False):
         """
         Load compounds to use.
 
@@ -20,13 +20,14 @@ class Loaders:
         ----------
         path: str
             Path to the compounds or string with ;-separated SMILES.
+        neutralize: bool
+            Whether to neutralize compounds or not.
 
         Returns
         -------
         pd.DataFrame:
             pandas dataframe with the compounds to use.
         """
-
         if Loaders._verify_file(path):
             compounds = pd.read_csv(path, header=0, sep='\t')
             if 'smiles' not in compounds.columns:
@@ -37,13 +38,15 @@ class Loaders:
         elif ChemUtils.validate_smiles(path.split(';')):
             df = pd.DataFrame()
             df['smiles'] = path.split(';')
+            if neutralize:
+                df['smiles'] = [ChemUtils.uncharge_smiles(s) for s in df.smiles.values]
             df['compound_id'] = [f'input_compound_{i}' for i in range(len(df))]
             return df
         else:
             raise FileNotFoundError(f"File {path} not found.")
 
     @staticmethod
-    def load_reaction_rules(path='data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv', orgs='ALL'):
+    def load_reaction_rules(path, orgs='ALL'):
         """
         Load the reaction rules to use.
 
@@ -114,28 +117,6 @@ class Loaders:
             return path.split(';')
 
     @staticmethod
-    def load_coreactants(path='data/coreactants/all_coreactants.tsv'):
-        """
-        Load the coreactants to use.
-
-        Parameters
-        ----------
-        path: str
-            Path to the coreactants.
-
-        Returns
-        -------
-        pd.DataFrame:
-            pandas dataframe with the coreactants to use.
-        """
-        coreactants = pd.read_csv(path, header=0, sep='\t')
-        if 'smiles' not in coreactants.columns:
-            raise ValueError('The compounds file must contain a column named "smiles".')
-        if 'compound_id' not in coreactants.columns:
-            raise ValueError('The compounds file must contain a column named "compound_id".')
-        return coreactants
-
-    @staticmethod
     def load_byproducts_to_remove(path):
         """
         Load byproducts to remove from products.
@@ -154,7 +135,7 @@ class Loaders:
             return []
         byproducts = pd.read_csv(path, header=0, sep='\t')
         if 'smiles' not in byproducts.columns:
-            raise ValueError('The coreactants file must contain a column named "smiles".')
+            raise ValueError('The molecules to remove file must contain a column named "smiles".')
         return [MolFromSmiles(sp) for sp in byproducts.smiles.values]
 
     @staticmethod
@@ -176,7 +157,7 @@ class Loaders:
             return []
         patterns = pd.read_csv(path, header=0, sep='\t')
         if 'smarts' not in patterns.columns:
-            raise ValueError('The coreactants file must contain a column named "smarts".')
+            raise ValueError('The patterns to remove file must contain a column named "smarts".')
         return [MolFromSmarts(sp) for sp in patterns.smarts.values]
 
     @staticmethod
@@ -216,7 +197,39 @@ class Loaders:
         ----------
         path: str
             The path to the files to verify.
+
+        Returns
+        -------
+        bool:
+            True if the file exists, False otherwise.
         """
         if not os.path.exists(path):
             return False
         return True
+
+    @staticmethod
+    def load_ms_data(path: str, ms_field: str):
+        """
+        Load the MS data.
+
+        Parameters
+        ----------
+        path: str
+            Path to the MS data.
+        ms_field: str
+            The column name of the mass information.
+
+        Returns
+        -------
+        pd.DataFrame:
+            pandas dataframe with the MS data.
+        """
+        if Loaders._verify_file(path):
+            ms_data = pd.read_csv(path, header=0, sep='\t')
+            if 'ParentDrug' not in ms_data.columns:
+                raise ValueError('The MS data file must contain a column named "ParentDrug".')
+            if ms_field not in ms_data.columns:
+                raise ValueError(f'The MS data file must contain a column named "{ms_field}".')
+            return ms_data
+        else:
+            raise FileNotFoundError(f"File {path} not found.")
