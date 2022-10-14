@@ -92,3 +92,16 @@ class TestChemUtils(TestCase):
 
         invalid_smiles = '[NH3+]CC[O-]]'
         self.assertIsNone(ChemUtils.calc_exact_mass(invalid_smiles))
+
+    def test_match_mass(self):
+        smiles = ['CC(=O)O[IH2+2](O)OC(C)=O', '[NH3+]CC[O-]', 'NCCO', '[NH3+]CC([O-])C[O-]']
+        masses = [ChemUtils.calc_exact_mass(s) for s in smiles]
+
+        for s in smiles:
+            self.assertTrue(ChemUtils.match_masses(s, masses, mass_tolerance=0))
+
+        self.assertFalse(ChemUtils.match_masses(smiles[0], masses[1:], mass_tolerance=0.02)[0])
+
+        masses = [263.9684]
+        self.assertTrue(ChemUtils.match_masses(smiles[0], masses, mass_tolerance=0.02)[0])
+        self.assertFalse(ChemUtils.match_masses(smiles[0], masses, mass_tolerance=0.01)[0])
