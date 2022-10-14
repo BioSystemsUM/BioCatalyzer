@@ -188,7 +188,7 @@ class ChemUtils:
         """
         mol = MolFromSmiles(smiles)
         if mol:
-            return Descriptors.ExactMolWt(mol)
+            return round(Descriptors.ExactMolWt(mol), 4)
         return None
 
     @staticmethod
@@ -198,5 +198,5 @@ class ChemUtils:
             return True, mass
         if mass:
             any_found = any(mass - mass_tolerance <= m <= mass + mass_tolerance for m in masses)
-            return any_found, round(mass, 4)
+            return any_found, mass
         return False, mass
