@@ -26,7 +26,7 @@ class BioReactor:
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
                  min_atom_count: int = 5,
-                 masses_to_match: str = None,
+                 masses: str = None,
                  mass_tolerance: float = 0.02,
                  n_jobs: int = 1):
         """
@@ -50,7 +50,7 @@ class BioReactor:
             The path to the file containing the patterns to remove from the products.
         min_atom_count: int
             The minimum number of heavy atoms a product must have.
-        masses_to_match: str
+        masses: str
             The path to the masses to match the products.
         mass_tolerance: float
             The mass tolerance to use when matching the masses.
@@ -66,7 +66,7 @@ class BioReactor:
         self._organisms_path = organisms_path
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
-        self._masses_to_match = masses_to_match
+        self._masses_to_match = masses
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
@@ -302,6 +302,6 @@ if __name__ == '__main__':
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
-                    masses_to_match='444.19515386008993;370.17950379609;336.17402449209',
+                    masses='444.19515386008993;370.17950379609;336.17402449209',
                     n_jobs=12)
     br.react()

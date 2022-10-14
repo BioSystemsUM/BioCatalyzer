@@ -99,7 +99,7 @@ def main(compounds,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
-                    masses_to_match=masses,
+                    masses=masses,
                     mass_tolerance=mass_tolerance,
                     n_jobs=n_jobs)
     br.react()
