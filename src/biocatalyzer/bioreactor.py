@@ -20,14 +20,11 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
-                 reaction_rules_path: str = None,
-                 coreactants_path: str = None,
+                 neutralize_compounds: bool = False,
                  organisms_path: str = None,
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
                  min_atom_count: int = 5,
-                 masses: str = None,
-                 mass_tolerance: float = 0.02,
                  n_jobs: int = 1):
         """
         Initialize the BioReactor class.
@@ -38,10 +35,8 @@ class BioReactor:
             The path to the file containing the compounds to use as reactants.
         output_path: str
             The path directory to save the results to.
-        reaction_rules_path: str
-            The path to the file containing the reaction rules to use.
-        coreactants_path: str
-            The path to the file containing the coreactants to use.
+        neutralize_compounds: bool
+            Whether to neutralize input compounds and generated compounds.
         organisms_path: str
             The path to the file containing the organisms to filter the reaction rules by.
         molecules_to_remove_path: str
@@ -50,10 +45,6 @@ class BioReactor:
             The path to the file containing the patterns to remove from the products.
         min_atom_count: int
             The minimum number of heavy atoms a product must have.
-        masses: str
-            The path to the masses to match the products.
-        mass_tolerance: float
-            The mass tolerance to use when matching the masses.
         n_jobs: int
             The number of jobs to run in parallel.
         """
@@ -61,35 +52,67 @@ class BioReactor:
         RDLogger.DisableLog('rdApp.*')
         self._compounds_path = compounds_path
         self._output_path = output_path
-        self._reaction_rules_path = reaction_rules_path
-        self._coreactants_path = coreactants_path
+        self._neutralize = neutralize_compounds
         self._organisms_path = organisms_path
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
-        self._masses_to_match = masses
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
         self._set_output_path(self._output_path)
-        self._compounds = Loaders.load_compounds(self._compounds_path)
-        self._masses = Loaders.load_masses_to_match(self._masses_to_match)
-        self._coreactants = Loaders.load_coreactants(self._coreactants_path)
+        self._compounds = Loaders.load_compounds(self._compounds_path, neutralize_compounds)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
         self._min_atom_count = min_atom_count
-        self._mass_tolerance = mass_tolerance
         if n_jobs == -1:
             self._n_jobs = multiprocessing.cpu_count()
         else:
             self._n_jobs = n_jobs
+        self._new_compounds = None
+
+    @property
+    def compounds(self):
+        """
+        Get the compounds used as reactants.
+
+        Returns
+        -------
+        pd.DataFrame
+            The compounds used as reactants.
+        """
+        return self._compounds
+
+    @property
+    def reaction_rules(self):
+        """
+        Get the reaction rules used.
+
+        Returns
+        -------
+        pd.DataFrame
+            The reaction rules used.
+        """
+        return self._reaction_rules
+
+    @property
+    def new_compounds(self):
+        """
+        Get the new compounds generated.
+
+        Returns
+        -------
+        pd.DataFrame
+            The new compounds generated.
+        """
+        if self._new_compounds:
+            return self._new_compounds
+        else:
+            raise ValueError('No compounds generated yet. Run the BioReactor react method first.')
 
     def _set_up_files(self):
         self.DATA_FILES = os.path.join(os.path.dirname(__file__), 'data')
-        if not self._reaction_rules_path:
-            self._reaction_rules_path = \
-                os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
-        if not self._coreactants_path:
-            self._coreactants_path = os.path.join(self.DATA_FILES, 'coreactants/all_coreactants.tsv')
+        self._reaction_rules_path = \
+            os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         if self._molecules_to_remove_path == 'default':
             self._molecules_to_remove_path = os.path.join(self.DATA_FILES, 'byproducts_to_remove/byproducts.tsv')
         if self._patterns_to_remove_path == 'default':
@@ -111,35 +134,6 @@ class BioReactor:
             if os.path.exists(output_path + '/results.tsv') or os.path.exists(output_path + '/new_compounds.tsv'):
                 raise FileExistsError(f"File {output_path} already exists. Define a different output path so that "
                                       f"previous results are not overwritten.")
-
-    def _set_reactants(self, reactants: str, compound: str):
-        """
-        Gets the coreactants in the correct order to be processed by the reaction rule.
-
-        Parameters
-        ----------
-        reactants: str
-            The coreactants ids to use.
-        compound: str
-            The main compound to use as reactant.
-
-        Returns
-        -------
-        List[Mol]
-            The coreactants in the correct order as Mol objects.
-        """
-        reactants_list = []
-        reactants = reactants.split(';')
-        if len(reactants) > 1:
-            for r in reactants:
-                if r == 'Any':
-                    reactants_list.append(compound)
-                else:
-                    reactants_list.append(self._coreactants[self._coreactants.compound_id == r].smiles.values[0])
-        else:
-            if reactants[0] == 'Any':
-                reactants_list.append(compound)
-        return reactants_list
 
     def _match_patterns(self, smiles: str):
         """
@@ -236,9 +230,10 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
-        nc = pd.DataFrame(columns=['ResultID', 'NewCompoundID', 'NewCompoundExactMass', 'NewCompoundSMILES', 'EC_Numbers'])
-        reactants_ids = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
-        reactants = self._set_reactants(reactants_ids, smiles)
+        new_compounds = pd.DataFrame(columns=['ResultID', 'OriginalCompoundID', 'OriginalReactionRuleID',
+                                              'NewCompoundID', 'NewCompoundSMILES', 'EC_Numbers'])
+        reactants = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
+        reactants = reactants.replace("Any", smiles).split(';')
         results = ChemUtils.react(reactants, smarts)
         if len(results) > 0:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
@@ -255,25 +250,18 @@ class BioReactor:
                                 p = p[1:]
                             elif p[-1] == ')':
                                 p = p[:-1]
-                        if p not in nc.NewCompoundSMILES.values:
-                            if self._masses:
-                                match_mass, mass = ChemUtils.match_masses(p, self._masses, self._mass_tolerance)
-                                if match_mass:
-                                    if not self._match_byproducts(p) and not self._match_patterns(p) \
-                                            and self._min_atom_count_filter(p):
-                                        ecs = self._get_ec_numbers(smarts_id)
-                                        nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
-                                        new_product_generated = True
-                            else:
-                                if not self._match_byproducts(p) and not self._match_patterns(p) \
-                                        and self._min_atom_count_filter(p):
-                                    ecs = self._get_ec_numbers(smarts_id)
-                                    mass = ChemUtils.calc_exact_mass(p)
-                                    nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
-                                    new_product_generated = True
+                        if p not in new_compounds.NewCompoundSMILES.values:
+                            if not self._match_byproducts(p) and not self._match_patterns(p) \
+                                    and self._min_atom_count_filter(p):
+                                if self._neutralize:
+                                    p = ChemUtils.uncharge_smiles(p)
+                                ecs = self._get_ec_numbers(smarts_id)
+                                new_compounds.loc[len(new_compounds)] = [id_result, smiles_id, smarts_id,
+                                                                         f"{id_result}_{i}", p, ecs]
+                                new_product_generated = True
                     if new_product_generated:
                         rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
-        return nc
+        return new_compounds
 
     def react(self):
         """
@@ -284,14 +272,15 @@ class BioReactor:
             rs.write('ResultID\tCompoundID\tRuleID\tNewReactionSmiles\n')
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
-                results = pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
-                                                               self._reaction_rules.SMARTS))
+                results_ = pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
+                                                                self._reaction_rules.SMARTS))
 
-        results = pd.concat(results)
+        results = pd.concat(results_)
         results = results.drop_duplicates(subset=['NewCompoundSMILES'])
         results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
-        t1 = time.time()
         print(f"{results.shape[0]} unique new compounds generated!")
+        self._new_compounds = results
+        t1 = time.time()
         print(f"Time elapsed: {t1 - t0} seconds")
 
 
@@ -302,6 +291,5 @@ if __name__ == '__main__':
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
-                    masses='444.19515386008993;370.17950379609;336.17402449209',
                     n_jobs=12)
     br.react()
