@@ -1,7 +1,7 @@
 import multiprocessing
 import os
 import time
-from typing import List
+from typing import List, Union
 
 import pandas as pd
 from rdkit import RDLogger
@@ -23,8 +23,8 @@ class BioReactor:
                  reaction_rules_path: str = None,
                  coreactants_path: str = None,
                  organisms_path: str = None,
-                 molecules_to_remove_path: str = None,
-                 patterns_to_remove_path: str = None,
+                 molecules_to_remove_path: Union[str, None] = 'default',
+                 patterns_to_remove_path: Union[str, None] = 'default',
                  min_atom_count: int = 5,
                  masses_to_match: str = None,
                  mass_tolerance: float = 0.02,
@@ -90,9 +90,9 @@ class BioReactor:
                 os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         if not self._coreactants_path:
             self._coreactants_path = os.path.join(self.DATA_FILES, 'coreactants/all_coreactants.tsv')
-        if not self._molecules_to_remove_path:
+        if self._molecules_to_remove_path == 'default':
             self._molecules_to_remove_path = os.path.join(self.DATA_FILES, 'byproducts_to_remove/byproducts.tsv')
-        if not self._patterns_to_remove_path:
+        if self._patterns_to_remove_path == 'default':
             self._patterns_to_remove_path = os.path.join(self.DATA_FILES, 'patterns_to_remove/patterns.tsv')
 
     @staticmethod
@@ -155,6 +155,8 @@ class BioReactor:
         bool
             True if mol matches patterns to remove, False otherwise.
         """
+        if len(self._patterns_to_remove) == 0:
+            return False
         mol = MolFromSmiles(smiles)
         if not mol:
             return True
@@ -199,6 +201,8 @@ class BioReactor:
         bool
             True if mol matches byproducts to remove, False otherwise.
         """
+        if len(self._molecules_to_remove) == 0:
+            return False
         if smiles in self._molecules_to_remove:
             return True
         else:
@@ -252,11 +256,19 @@ class BioReactor:
                             elif p[-1] == ')':
                                 p = p[:-1]
                         if p not in nc.NewCompoundSMILES.values:
-                            match_mass, mass = ChemUtils.match_masses(p, self._masses, self._mass_tolerance)
-                            if match_mass:
+                            if self._masses:
+                                match_mass, mass = ChemUtils.match_masses(p, self._masses, self._mass_tolerance)
+                                if match_mass:
+                                    if not self._match_byproducts(p) and not self._match_patterns(p) \
+                                            and self._min_atom_count_filter(p):
+                                        ecs = self._get_ec_numbers(smarts_id)
+                                        nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
+                                        new_product_generated = True
+                            else:
                                 if not self._match_byproducts(p) and not self._match_patterns(p) \
                                         and self._min_atom_count_filter(p):
                                     ecs = self._get_ec_numbers(smarts_id)
+                                    mass = ChemUtils.calc_exact_mass(p)
                                     nc.loc[len(nc)] = [id_result, f"{id_result}_{i}", mass, p, ecs]
                                     new_product_generated = True
                     if new_product_generated:

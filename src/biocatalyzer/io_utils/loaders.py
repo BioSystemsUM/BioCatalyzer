@@ -148,6 +148,8 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the byproducts to remove.
         """
+        if not path:
+            return []
         byproducts = pd.read_csv(path, header=0, sep='\t')
         if 'smiles' not in byproducts.columns:
             raise ValueError('The coreactants file must contain a column named "smiles".')
@@ -168,6 +170,8 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the patterns to remove.
         """
+        if not path:
+            return []
         patterns = pd.read_csv(path, header=0, sep='\t')
         if 'smarts' not in patterns.columns:
             raise ValueError('The coreactants file must contain a column named "smarts".')
@@ -188,7 +192,9 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the masses to match.
         """
-        if Loaders._verify_file(masses):
+        if not masses:
+            return None
+        elif Loaders._verify_file(masses):
             masses = pd.read_csv(masses, header=0, sep='\t')
             if 'mass' not in masses.columns:
                 raise ValueError('The masses file must contain a column named "mass".')
