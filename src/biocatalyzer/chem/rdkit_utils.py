@@ -170,7 +170,7 @@ class ChemUtils:
         if mol:
             uncharger = Uncharger()
             return MolToSmiles(uncharger.uncharge(mol))
-        return None
+        return smiles
 
     @staticmethod
     def calc_exact_mass(smiles: str):
