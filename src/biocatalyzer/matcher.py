@@ -11,6 +11,10 @@ DATA_FILES = os.path.dirname(__file__)
 
 
 class MSDataMatcher:
+    """
+    Main class of the MS data matcher.
+    Performs matching of the new predicted compounds to the MS data.
+    """
 
     def __init__(self,
                  ms_data_path: str,
@@ -21,6 +25,28 @@ class MSDataMatcher:
                  mode: str = 'mass',
                  ms_field: str = 'Mass',
                  tolerance: float = 0.02):
+        """
+        Initialize the MSDataMatcher class.
+
+        Parameters
+        ----------
+        ms_data_path: str
+            Path to the MS data.
+        output_path: str
+            Path to the output directory.
+        compounds_to_match: Union[pd.DataFrame, str]
+            The new predicted compounds to match.
+        compound_id_field: str
+            The name of the field with the compound IDs in the MS data.
+        compound_smiles_field: str
+            The name of the field with the compound SMILES in the MS data.
+        mode: str
+            The mode of the matcher. Either 'mass' or 'mass_diff'.
+        ms_field: str
+            The name of the field with the MS data.
+        tolerance: float
+            The tolerance for the mass matching.
+        """
         self._ms_data = Loaders.load_ms_data(os.path.join(DATA_FILES, ms_data_path), ms_field)
         self._output_path = output_path
         self._compound_id_field = compound_id_field
