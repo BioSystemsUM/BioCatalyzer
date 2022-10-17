@@ -1,7 +1,7 @@
 import multiprocessing
 import os
 import time
-from typing import List, Union
+from typing import Union
 
 import pandas as pd
 from rdkit import RDLogger
@@ -9,6 +9,8 @@ from rdkit.Chem import MolFromSmiles
 
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
+
+DATA_FILES = os.path.dirname(__file__)
 
 
 class BioReactor:
@@ -110,13 +112,12 @@ class BioReactor:
             raise ValueError('No compounds generated yet. Run the BioReactor react method first.')
 
     def _set_up_files(self):
-        self.DATA_FILES = os.path.join(os.path.dirname(__file__), 'data')
         self._reaction_rules_path = \
-            os.path.join(self.DATA_FILES, 'reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
+            os.path.join(DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         if self._molecules_to_remove_path == 'default':
-            self._molecules_to_remove_path = os.path.join(self.DATA_FILES, 'byproducts_to_remove/byproducts.tsv')
+            self._molecules_to_remove_path = os.path.join(DATA_FILES, 'data/byproducts_to_remove/byproducts.tsv')
         if self._patterns_to_remove_path == 'default':
-            self._patterns_to_remove_path = os.path.join(self.DATA_FILES, 'patterns_to_remove/patterns.tsv')
+            self._patterns_to_remove_path = os.path.join(DATA_FILES, 'data/patterns_to_remove/patterns.tsv')
 
     @staticmethod
     def _set_output_path(output_path: str):
@@ -218,6 +219,40 @@ class BioReactor:
         """
         return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
 
+    @staticmethod
+    def process_results(results: pd.DataFrame):
+        """
+        Process the results of the reactor.
+        Group results by unique SMILES and merges the other columns.
+
+        Parameters
+        ----------
+        results: pd.DataFrame
+            The results dataframe to process.
+
+        Returns
+        -------
+        pd.DataFrame
+            The processed results.
+        """
+        results = results.groupby('NewCompoundSmiles').agg({'OriginalCompoundID': ';'.join,
+                                                            'OriginalCompoundSmiles': ';'.join,
+                                                            'OriginalReactionRuleID': ';'.join,
+                                                            'NewCompoundID': 'first',
+                                                            'NewReactionSmiles': ';'.join,
+                                                            'EC_Numbers': ';'.join}).reset_index()
+        # reorder columns
+        results = results[['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID', 'NewCompoundID',
+                           'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers']]
+        results['OriginalCompoundID'] = results['OriginalCompoundID'].apply(lambda x: ';'.join(list(set(x.split(';')))))
+        results['OriginalCompoundSmiles'] = results['OriginalCompoundSmiles'].apply(lambda x:
+                                                                                    ';'.join(list(set(x.split(';')))))
+        results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x:
+                                                                                    ';'.join(list(set(x.split(';')))))
+        results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: ';'.join(list(set(x.split(';')))))
+        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: ';'.join(list(set(x.split(';')))))
+        return results
+
     def _react_single(self, smiles: str, smarts: str):
         """
         React a single compound with a single reaction rule.
@@ -230,37 +265,27 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
-        new_compounds = pd.DataFrame(columns=['ResultID', 'OriginalCompoundID', 'OriginalReactionRuleID',
-                                              'NewCompoundID', 'NewCompoundSMILES', 'EC_Numbers'])
+        new_compounds = pd.DataFrame(columns=['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID',
+                                              'NewCompoundID', 'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers'])
         reactants = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = reactants.replace("Any", smiles).split(';')
         results = ChemUtils.react(reactants, smarts)
         if len(results) > 0:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
             smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
-            with open(self._output_path + '/results.tsv', 'a') as rs:
-                for i, result in enumerate(results):
-                    id_result = f"{smiles_id}_{smarts_id}_{i}"
-                    new_product_generated = False
-                    products = result.split('>')[-1].split('.')
-                    for p in products:
-                        # deal with cases where invalid number of parentheses are generated
-                        if (p.count('(') + p.count(')')) % 2 != 0:
-                            if p[0] == '(':
-                                p = p[1:]
-                            elif p[-1] == ')':
-                                p = p[:-1]
-                        if p not in new_compounds.NewCompoundSMILES.values:
-                            if not self._match_byproducts(p) and not self._match_patterns(p) \
-                                    and self._min_atom_count_filter(p):
-                                if self._neutralize:
-                                    p = ChemUtils.uncharge_smiles(p)
-                                ecs = self._get_ec_numbers(smarts_id)
-                                new_compounds.loc[len(new_compounds)] = [id_result, smiles_id, smarts_id,
-                                                                         f"{id_result}_{i}", p, ecs]
-                                new_product_generated = True
-                    if new_product_generated:
-                        rs.write(f"{id_result}\t{smiles_id}\t{smarts_id}\t{result}\n")
+            for i, result in enumerate(results):
+                products = result.split('>')[-1].split('.')
+                # keep only the most similar compound to the input compound
+                most_similar_product = ChemUtils.most_similar_compound(smiles, products)
+                if most_similar_product not in new_compounds.NewCompoundSmiles.values:
+                    if not self._match_byproducts(most_similar_product) \
+                            and not self._match_patterns(most_similar_product) \
+                            and self._min_atom_count_filter(most_similar_product):
+                        if self._neutralize:
+                            most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
+                        ecs = self._get_ec_numbers(smarts_id)
+                        new_compounds.loc[len(new_compounds)] = [smiles_id, smiles, smarts_id, f"{smiles_id}_{i}",
+                                                                 most_similar_product, result, ecs]
         return new_compounds
 
     def react(self):
@@ -268,15 +293,14 @@ class BioReactor:
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
-        with open(self._output_path + '/results.tsv', 'w') as rs:
-            rs.write('ResultID\tCompoundID\tRuleID\tNewReactionSmiles\n')
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
-                results_ = pool.starmap(self._react_single, zip([compound]*self._reaction_rules.shape[0],
+                results_ = pool.starmap(self._react_single, zip([compound] * self._reaction_rules.shape[0],
                                                                 self._reaction_rules.SMARTS))
 
         results = pd.concat(results_)
-        results = results.drop_duplicates(subset=['NewCompoundSMILES'])
+        results = self.process_results(results)
+
         results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
         print(f"{results.shape[0]} unique new compounds generated!")
         self._new_compounds = results
