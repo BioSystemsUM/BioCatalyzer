@@ -161,34 +161,6 @@ class Loaders:
         return [MolFromSmarts(sp) for sp in patterns.smarts.values]
 
     @staticmethod
-    def load_masses_to_match(masses):
-        """
-        Load masses to match.
-
-        Parameters
-        ----------
-        masses: str
-            Path to the masses to match.
-
-        Returns
-        -------
-        pd.DataFrame:
-            pandas dataframe with the masses to match.
-        """
-        if not masses:
-            return None
-        elif Loaders._verify_file(masses):
-            masses = pd.read_csv(masses, header=0, sep='\t')
-            if 'mass' not in masses.columns:
-                raise ValueError('The masses file must contain a column named "mass".')
-            return list(masses['mass'].values)
-        else:
-            try:
-                return [float(m) for m in masses.split(';')]
-            except ValueError:
-                raise ValueError('The masses must be an existing file or a list of numbers separated by ";".')
-
-    @staticmethod
     def _verify_file(path: str):
         """
         Verify that the provided paths to the files exist.
@@ -233,3 +205,26 @@ class Loaders:
             return ms_data
         else:
             raise FileNotFoundError(f"File {path} not found.")
+
+    @staticmethod
+    def load_new_compounds(path: str):
+        """
+        Load the new compounds data to match with the MS data.
+        The file must be a new_compounds.tsv file resulting from running the BioCatalyzer BioReactor.
+
+        Parameters
+        ----------
+        path: str
+            Path to the new compounds data.
+
+        Returns
+        -------
+        pd.DataFrame:
+            pandas dataframe with the new compounds' data.
+        """
+        if Loaders._verify_file(path):
+            new_compounds = pd.read_csv(path, header=0, sep='\t')
+            return new_compounds
+        else:
+            raise FileNotFoundError(f"File {path} not found.")
+
