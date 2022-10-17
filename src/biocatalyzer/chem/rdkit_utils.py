@@ -203,7 +203,7 @@ class ChemUtils:
         return False, mass
 
     @staticmethod
-    def calc_fingerprint_smilarity(smiles1: str, smiles2: str):
+    def calc_fingerprint_similarity(smiles1: str, smiles2: str):
         """
         Calculates the similarity between two molecules based on fingerprints.
 
@@ -243,15 +243,25 @@ class ChemUtils:
         str
             The most similar compound SMILES string.
         """
-        smiles_list = ChemUtils.correct_number_of_parenthesis(smiles_list)
+        smiles_list = ChemUtils._correct_number_of_parenthesis(smiles_list)
         if len(smiles_list) == 1:
             return smiles_list[0]
-        sims = [ChemUtils.calc_fingerprint_smilarity(smiles, s) for s in smiles_list]
+        sims = [ChemUtils.calc_fingerprint_similarity(smiles, s) for s in smiles_list]
         matching = sims.index(max(sims))
         return smiles_list[matching]
 
     @staticmethod
-    def correct_number_of_parenthesis(smiles_list: List[str]):
+    def _correct_number_of_parenthesis(smiles_list: List[str]):
+        """
+        Corrects the number of parenthesis in a list of SMILES strings.
+        Sometimes the react method returns a SMILES string with an incorrect number of parenthesis.
+        This method corrects that issue.
+
+        Parameters
+        ----------
+        smiles_list: List[str]
+            The list of SMILES strings to correct the parenthesis.
+        """
         corrected_smiles = []
         for p in smiles_list:
             # deal with cases where invalid number of parentheses are generated
