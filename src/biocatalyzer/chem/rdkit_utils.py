@@ -1,7 +1,8 @@
 from typing import Union, List
 
-from rdkit import Chem
+from rdkit import Chem, DataStructs
 from rdkit.Chem import MolFromSmiles, Mol, MolToSmiles, RemoveHs, AllChem, Descriptors
+from rdkit.Chem.Fingerprints.FingerprintMols import FingerprintMol
 from rdkit.Chem.MolStandardize.rdMolStandardize import Uncharger
 from rdkit.Chem.rdChemReactions import ReactionFromSmarts, ChemicalReaction
 
@@ -200,3 +201,64 @@ class ChemUtils:
             any_found = any(mass - mass_tolerance <= m <= mass + mass_tolerance for m in masses)
             return any_found, mass
         return False, mass
+
+    @staticmethod
+    def calc_fingerprint_smilarity(smiles1: str, smiles2: str):
+        """
+        Calculates the similarity between two molecules based on fingerprints.
+
+        Parameters
+        ----------
+        smiles1: str
+            The first molecule smiles.
+        smiles2: str
+            The second molecule smiles.
+        Returns
+        -------
+        float
+            The similarity between the two molecules.
+        """
+        mol1 = MolFromSmiles(smiles1)
+        mol2 = MolFromSmiles(smiles2)
+        if mol1 and mol2:
+            fp1 = FingerprintMol(mol1)
+            fp2 = FingerprintMol(mol2)
+            return DataStructs.FingerprintSimilarity(fp1, fp2)
+        return 0.0
+
+    @staticmethod
+    def most_similar_compound(smiles: str, smiles_list: List[str]):
+        """
+        Finds the most similar compound in a list of compounds.
+
+        Parameters
+        ----------
+        smiles: str
+            The smiles of the compound to find the most similar compound for.
+        smiles_list: List[str]
+            The list of compounds to find the most similar compound in.
+
+        Returns
+        -------
+        str
+            The most similar compound SMILES string.
+        """
+        smiles_list = ChemUtils.correct_number_of_parenthesis(smiles_list)
+        if len(smiles_list) == 1:
+            return smiles_list[0]
+        sims = [ChemUtils.calc_fingerprint_smilarity(smiles, s) for s in smiles_list]
+        matching = sims.index(max(sims))
+        return smiles_list[matching]
+
+    @staticmethod
+    def correct_number_of_parenthesis(smiles_list: List[str]):
+        corrected_smiles = []
+        for p in smiles_list:
+            # deal with cases where invalid number of parentheses are generated
+            if (p.count('(') + p.count(')')) % 2 != 0:
+                if p[0] == '(':
+                    p = p[1:]
+                elif p[-1] == ')':
+                    p = p[:-1]
+            corrected_smiles.append(p)
+        return corrected_smiles
