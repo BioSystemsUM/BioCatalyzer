@@ -134,3 +134,4 @@ src/biocatalyzer/results/*
 
 src/biocatalyzer/data/organisms/organisms_paper.tsv
 src/biocatalyzer/data/compounds/drugs_paper_subset.csv
+src/biocatalyzer/data/compounds/drugs_paper_all.tsv
