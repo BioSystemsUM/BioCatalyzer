@@ -28,20 +28,23 @@ Installing from GitHub:
 ## Command Line Interface
 
 ```bash
-biocatalyzer <path_to_compounds> <output_path> [--patterns_to_remove=<FILE_PATH>] [--molecules_to_remove=<FILE_PATH>] [--min_atom_count=<INT>] [--masses=<FILE_PATH>or<str>] [--mass_tolerance=<float>] [--n_jobs=<INT>]
+biocatalyzer <PATH_TO_COMPOUNDS> <OUTPUT_DIRECTORY> [--neutralize=<BOOL>] [--organisms=<FILE_PATH>] [--patterns_to_remove=<FILE_PATH>] [--molecules_to_remove=<FILE_PATH>] [--min_atom_count=<INT>] [--match_ms_data=<BOOL>] [--ms_data_path=<FILE_PATH>] [--mode=<STR>] [--tolerance=<FLOAT>] [--n_jobs=<INT>]
 ```
 
-| Argument            | Example                                                 | Description                                                                                                                                                                                                                           | Default                                                                          |
-|---------------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| compounds           | `file.tsv` or `"smile1;smiles2;smile3;etc"`             | The path to the file containing the compounds to use as reactants. Or ;-separated SMILES strings.<sup>1</sup>                                                                                                                         |                                                                                  |
- | output_path         | `output/directory/`                                     | The path directory to save the results to.                                                                                                                                                                                            |                                                                                  |
-| organisms           | `file.tsv` or `"org_id1;org_id2;org_id3;etc"` or `None` | The path to the file containing the organisms to use. Or ;-separated organisms identifiers. Reaction Rules will be selected accordingly (select only rules associated with enzymes encoded by genes from this organisms).<sup>4</sup> | All reaction rules are used.                                                     |
-| patterns_to_remove  | `patterns.tsv` or `None`                                | The path to the file containing the patterns to remove from the products. <sup>5</sup>                                                                                                                                                | [patterns.tsv](src/biocatalyzer/data/patterns_to_remove/patterns.tsv)            |
-| molecules_to_remove | `molecules.tsv` or `None`                               | The path to the file containing the molecules to remove from the products. <sup>6</sup>                                                                                                                                               | [byproducts.tsv](src/biocatalyzer/data/byproducts_to_remove/byproducts.tsv)      |
-| min_atom_count      | `4`                                                     | The minimum number of heavy atoms a product must have.                                                                                                                                                                                | `5`                                                                              |
-| masses              | `masses.tsv` or `"mass1;mass2;mass2;etc"` or `None`     | The path to the file containing the masses of the compounds to use as reactants. Or ;-separated masses. <sup>7</sup>                                                                                                                  | `None` (Do not match any mass in specific.)                                      |
-| mass_tolerance      | `0.02`                                                  | The mass tolerance to use when matching masses.                                                                                                                                                                                       | `0.02`                                                                           |
-| n_jobs              | `6`                                                     | The number of jobs to run in parallel (-1 uses all).                                                                                                                                                                                  | `1`                                                                              |
+| Argument            | Example                                                 | Description                                                                                                                                                                                                                           | Default                                                                     |
+|---------------------|---------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
+| compounds           | `file.tsv` or `"smile1;smiles2;smile3;etc"`             | The path to the file containing the compounds to use as reactants. Or ;-separated SMILES strings.<sup>1</sup>                                                                                                                         |                                                                             |
+ | output_directory    | `output/directory/`                                     | The path directory to save the results to.                                                                                                                                                                                            |                                                                             |
+| neutralize          | `True` or `False`                                       | Whether to neutralize the compounds before predicting the products. In this case the new products will also be neutralized.                                                                                                           | `False`                                                                     |
+| organisms           | `file.tsv` or `"org_id1;org_id2;org_id3;etc"` or `None` | The path to the file containing the organisms to use. Or ;-separated organisms identifiers. Reaction Rules will be selected accordingly (select only rules associated with enzymes encoded by genes from this organisms).<sup>2</sup> | All reaction rules are used.                                                |
+| patterns_to_remove  | `patterns.tsv` or `None`                                | The path to the file containing the patterns to remove from the products. <sup>3</sup>                                                                                                                                                | [patterns.tsv](src/biocatalyzer/data/patterns_to_remove/patterns.tsv)       |
+| molecules_to_remove | `molecules.tsv` or `None`                               | The path to the file containing the molecules to remove from the products. <sup>4</sup>                                                                                                                                               | [byproducts.tsv](src/biocatalyzer/data/byproducts_to_remove/byproducts.tsv) |
+| min_atom_count      | `4`                                                     | The minimum number of heavy atoms a product must have.                                                                                                                                                                                | `5`                                                                         |
+| match_ms_data       | `True` or `False`                                       | Whether to match the predicted products to the MS data.                                                                                                                                                                               | `False`                                                                     |
+| ms_data_path        | `ms_data.tsv`                                           | The path to the file containing the MS data. <sup>5</sup>                                                                                                                                                                             | `None`                                                                      |
+| mode                | `mass` or `mass_diff`                                   | The mode to use when matching the predicted products to the MS data.                                                                                                                                                                  | `mass`                                                                      |
+| tolerance           | `0.02`                                                  | The mass tolerance to use when matching masses.                                                                                                                                                                                       | `0.02`                                                                      |
+| n_jobs              | `6`                                                     | The number of jobs to run in parallel (-1 uses all).                                                                                                                                                                                  | `1`                                                                         |
 
 ### Compounds
 
@@ -53,9 +56,21 @@ The file must be tab-separated and contain the following columns:
 
 Alternatively, the compounds can be passed as ;-separated string with the SMILES representations.
 
+### Output directory
+
+The output path must be a directory. The results will be saved in the following files:
+- `new_compouds.tsv` - the predicted products;
+- `matches.tsv` (if `match_ms_data` is set to `True`) - the matches between the predicted products and the MS data;
+
+### Neutralize
+
+If set to `True`, the compounds will be neutralized before predicting the products. In this case the new products will 
+also be neutralized.
+
 ### Organisms
 
-All organisms' identifiers are defined in: [https://www.genome.jp/kegg/catalog/org_list.html](https://www.genome.jp/kegg/catalog/org_list.html)
+All organisms' identifiers are defined in: 
+[https://www.genome.jp/kegg/catalog/org_list.html](https://www.genome.jp/kegg/catalog/org_list.html) are allowed.
 
 Example:
 
@@ -65,7 +80,8 @@ Example:
 
 [sce](https://www.genome.jp/kegg-bin/show_organism?org=sce) is for *Saccharomyces cerevisiae (budding yeast)*.
 
-<sup>4</sup> If you want to use your own organisms see [organisms.csv](src/biocatalyzer/data/organisms/organisms_to_use.tsv) for an example.
+If you want to use your own organisms see 
+[organisms.csv](src/biocatalyzer/data/organisms/organisms_to_use.tsv)<sup>2</sup> for an example.
 
 The file must be tab-separated and contain a column named `org_id` with the organisms' identifiers (KEGG identifiers).
 
@@ -73,23 +89,42 @@ Alternatively, the organisms can be passed as ;-separated string with the organi
 
 ### Patterns to remove
 
-<sup>5</sup> If you want to use your own patterns to remove see [patterns.tsv](src/biocatalyzer/data/patterns_to_remove/patterns.tsv) for an example.
+If you want to use your own patterns to remove see 
+[patterns.tsv](src/biocatalyzer/data/patterns_to_remove/patterns.tsv)<sup>3</sup> for an example.
 
 The file must be tab-separated and contain a column named `smarts` with the SMARTS representation of the patterns to remove.
 
 ### Molecules to remove
 
-<sup>6</sup> If you want to use your own molecules to remove see [byproducts.tsv](src/biocatalyzer/data/byproducts_to_remove/byproducts.tsv) for an example.
+If you want to use your own molecules to remove see 
+[byproducts.tsv](src/biocatalyzer/data/byproducts_to_remove/byproducts.tsv)<sup>4</sup> for an example.
 
 The file must be tab-separated and contain a column named `smiles` with the SMILES representation of the molecules to remove.
 
-### Masses
+### Match MS data
 
-You can provide a tab-separated file containing the masses to match the new products. See [masses.tsv](src/biocatalyzer/data/masses_to_match/masses.tsv) for an example.
+If set to `True`, the predicted products will be matched to the MS data.
 
-The file must be tab-separated and contain a column named `mass` with the masses to match.
+In this case the `ms_data_path` must be set.
 
-Alternatively, the masses can be passed as ;-separated string with the masses to match.
+### MS data path
+
+See [ms_data.tsv](src/biocatalyzer/data/ms_data_example/ms_data_paper.tsv)<sup>5</sup> for an example.
+
+The file must be tab-separated and contain the following columns:
+- `ParentCompound` - the parent/original compound identifiers.
+- `ParentCompoundSmiles` - the SMILES representation of the compounds (optional).
+- `Mass` or `MassDiff` - depending on the selected `mode`, the mass or mass difference of the molecule.
+
+### Mode
+
+The mode to use when matching the predicted products to the MS data.
+
+If set to `mass`, the `Mass` column will be used. This will match the predicted products exact mass to the MS 
+data provided in the `Mass` column.
+
+If set to `mass_diff`, the `MassDiff` column will be used. This will match the predicted products mass difference to 
+the ParentDrug as provided in the MS data `MassDiff` column.
 
 ### Mass Tolerance
 
