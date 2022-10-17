@@ -105,3 +105,24 @@ class TestChemUtils(TestCase):
         masses = [263.9684]
         self.assertTrue(ChemUtils.match_masses(smiles[0], masses, mass_tolerance=0.02)[0])
         self.assertFalse(ChemUtils.match_masses(smiles[0], masses, mass_tolerance=0.01)[0])
+
+    def test_most_similar_compound(self):
+        smile = 'C[NH+](C)CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12'
+        smiles_to_compare = ['CO',
+                             'C[NH2+]CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12',
+                             'Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1OP(=O)(O)O']
+
+        self.assertEqual(ChemUtils.most_similar_compound(smile, smiles_to_compare), smiles_to_compare[1])
+
+        smiles_to_compare.append('CC=(')
+        self.assertEqual(ChemUtils.most_similar_compound(smile, smiles_to_compare), smiles_to_compare[1])
+
+        smiles_to_compare_2 = ["*c1c(*)c(O)c(*)c(*)c1O", "C[N+](C)(O)CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12"]
+
+        self.assertEqual(ChemUtils.most_similar_compound(smile, smiles_to_compare_2), smiles_to_compare_2[1])
+
+        smiles2 = 'CCCC(=O)Nc1ccc(OCC(O)C[NH2+]C(C)C)c(C(C)=O)c1'
+        # mol number 2 is invalid
+        smiles_to_compare_3 = ['*c1c(*)c(O)c(*)c(*)c1O', 'CCCC(=O)Nc1ccc(=OCC(O)C[NH2+]C(C)C)c(C(C)=O)c1']
+
+        self.assertEqual(ChemUtils.most_similar_compound(smiles2, smiles_to_compare_3), smiles_to_compare_3[0])
