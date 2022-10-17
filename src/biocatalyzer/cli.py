@@ -1,7 +1,7 @@
 import click
 
 from biocatalyzer.bioreactor import BioReactor
-from biocatalyzer.ms_matcher.ms_data_matcher import MSDataMatcher
+from biocatalyzer.matcher import MSDataMatcher
 
 
 @click.command()
@@ -18,12 +18,6 @@ from biocatalyzer.ms_matcher.ms_data_matcher import MSDataMatcher
               type=bool,
               default=False,
               help="Whether to neutralize input compounds and newly generated compounds.")
-@click.option("--reaction_rules",
-              "reaction_rules",
-              type=click.Path(exists=True),
-              default=None,
-              help="The path to the user defined file containing the reaction rules to use.",
-              )
 @click.option("--organisms",
               "organisms",
               type=click.Path(exists=True),
@@ -32,14 +26,14 @@ from biocatalyzer.ms_matcher.ms_data_matcher import MSDataMatcher
               )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",
-              type=click.Path(exists=True),
+              type=click.File('r'),
               default=None,
               show_default=True,
               help="A user defined file containing SMARTS patterns. Products that match a pattern will be removed.",
               )
 @click.option("--molecules_to_remove",
               "molecules_to_remove",
-              type=click.Path(exists=True),
+              type=click.File('r'),
               default=None,
               show_default=True,
               help="A user defined file containing molecules encoded as SMILES to be removed from the products.",
@@ -51,9 +45,15 @@ from biocatalyzer.ms_matcher.ms_data_matcher import MSDataMatcher
               show_default=True,
               help="The minimum atom count of a molecule (molecules with less atoms are removed from the products).",
               )
+@click.option("--match_ms_data",
+              "match_ms_data",
+              type=bool,
+              default=False,
+              show_default=True,
+              help="Whether to match the generated products with MS data.")
 @click.option("--ms_data_path",
               "ms_data_path",
-              type=click.Path(exists=True),
+              type=click.File('r'),
               default=None,
               show_default=True,
               help="The path to the file containing the MS data to use.")
@@ -64,12 +64,6 @@ from biocatalyzer.ms_matcher.ms_data_matcher import MSDataMatcher
               show_default=True,
               help="The mode to use for the MS data matching (mass for ExactMass matching or mass_dif for ExactMass "
                    "differences matching).")
-@click.option("--ms_field",
-              "ms_field",
-              type=str,
-              default='Mass',
-              show_default=True,
-              help="The name of the column to use for the MS data matching.")
 @click.option("--tolerance",
               "tolerance",
               type=float,
@@ -86,15 +80,14 @@ from biocatalyzer.ms_matcher.ms_data_matcher import MSDataMatcher
               )
 def main(compounds,
          output_path,
-         reaction_rules,
          neutralize,
          organisms,
          patterns_to_remove,
          molecules_to_remove,
          min_atom_count,
+         match_ms_data,
          ms_data_path,
          mode,
-         ms_field,
          tolerance,
          n_jobs):
     """Run the biocatalyzer.
@@ -115,15 +108,25 @@ def main(compounds,
                     n_jobs=n_jobs)
     br.react()
 
-    ms = MSDataMatcher(ms_data_path=ms_data_path,
-                       output_path=output_path,
-                       mode=mode,
-                       ms_field=ms_field,
-                       tolerance=tolerance,
-                       reaction_rules=br.reaction_rules,
-                       new_compounds=br.new_compounds)
+    if match_ms_data:
+        if not ms_data_path:
+            raise ValueError("The path to the MS data file is required when matching MS data.")
+        if mode == 'mass':
+            ms_field = 'Mass'
+        elif mode == 'mass_diff':
+            ms_field = 'MassDiff'
+        else:
+            raise ValueError(f"Unknown mode: {mode}.")
+        ms = MSDataMatcher(ms_data_path=ms_data_path,
+                           compounds_to_match=f"{output_path}/new_compounds.tsv",
+                           output_path=output_path,
+                           compound_id_field='ParentCompound',
+                           compound_smiles_field='ParentCompoundSmiles',
+                           mode=mode,
+                           ms_field=ms_field,
+                           tolerance=tolerance)
 
-    ms.generate_ms_results()
+        ms.generate_ms_results()
 
 
 if __name__ == "__main__":
