@@ -82,8 +82,8 @@ class Loaders:
             return False
 
         if not isinstance(orgs, str):
-            # TODO: check if adding expontaneous reactions actually makes sense
-            orgs.append('expontaneous')
+            # TODO: check if adding spontaneous reactions actually makes sense
+            orgs.append('spontaneous_reaction')
             rules['has_org'] = rules.apply(lambda x: match_org(x['Organisms'], orgs), axis=1)
             rules = rules[rules['has_org']]
             rules.drop('has_org', axis=1, inplace=True)
@@ -180,7 +180,7 @@ class Loaders:
         return True
 
     @staticmethod
-    def load_ms_data(path: str, ms_field: str):
+    def load_ms_data(path: str, mode: str = 'mass'):
         """
         Load the MS data.
 
@@ -188,8 +188,8 @@ class Loaders:
         ----------
         path: str
             Path to the MS data.
-        ms_field: str
-            The column name of the mass information.
+        mode: str
+            The mode to use. Can be 'mass' or 'mass_diff'.
 
         Returns
         -------
@@ -198,10 +198,18 @@ class Loaders:
         """
         if Loaders._verify_file(path):
             ms_data = pd.read_csv(path, header=0, sep='\t')
-            if 'ParentDrug' not in ms_data.columns:
-                raise ValueError('The MS data file must contain a column named "ParentDrug".')
-            if ms_field not in ms_data.columns:
-                raise ValueError(f'The MS data file must contain a column named "{ms_field}".')
+            if 'ParentCompound' not in ms_data.columns:
+                raise ValueError('The MS data file must contain a column named "ParentCompound".')
+            if 'ParentCompoundSmiles' not in ms_data.columns:
+                raise ValueError('The MS data file must contain a column named "ParentCompoundSmiles".')
+            if mode == 'mass':
+                if 'Mass' not in ms_data.columns:
+                    raise ValueError('The MS data file must contain a column named "Mass".')
+            elif mode == 'mass_diff':
+                if 'MassDiff' not in ms_data.columns:
+                    raise ValueError('The MS data file must contain a column named "MassDiff".')
+            else:
+                raise ValueError(f"Mode {mode} not supported.")
             return ms_data
         else:
             raise FileNotFoundError(f"File {path} not found.")
@@ -224,7 +232,11 @@ class Loaders:
         """
         if Loaders._verify_file(path):
             new_compounds = pd.read_csv(path, header=0, sep='\t')
+            columns = ['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID', 'NewCompoundID',
+                       'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers']
+            if not all(col in new_compounds.columns for col in columns):
+                raise ValueError(f'The new compounds file must be a result of BioCatalyzer module, i.e. it should '
+                                 f'contain the following columns: {columns}.')
             return new_compounds
         else:
             raise FileNotFoundError(f"File {path} not found.")
-
