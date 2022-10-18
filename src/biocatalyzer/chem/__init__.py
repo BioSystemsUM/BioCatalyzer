@@ -1,1 +1,1 @@
-from .rdkit_utils import ChemUtils
+from .chem_utils import ChemUtils
