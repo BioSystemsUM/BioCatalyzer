@@ -90,7 +90,7 @@ def main(compounds,
          mode,
          tolerance,
          n_jobs):
-    """Run the biocatalyzer.
+    """Run the BioCatalyzer and the MSDataMatcher (optional).
 
     Mandatory arguments:
 
