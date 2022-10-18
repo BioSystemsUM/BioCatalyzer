@@ -64,3 +64,24 @@ class LoadersTestCase(TestCase):
 
         invalid_path = 'asdasdas.tsv'
         self.assertRaises(FileNotFoundError, Loaders.load_patterns_to_remove, invalid_path)
+
+    def test_verify_file(self):
+        reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
+        self.assertTrue(Loaders._verify_file(reaction_rules_path))
+        self.assertFalse(Loaders._verify_file('random_path.tsv'))
+
+    def test_load_ms_data(self):
+        ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
+        reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
+        self.assertRaises(FileNotFoundError, Loaders.load_ms_data, 'random_path.tsv')
+        self.assertRaises(ValueError, Loaders.load_ms_data, reaction_rules_path)
+        self.assertEqual(Loaders.load_ms_data(ms_data_path).shape, (23, 20))
+
+    def test_load_new_compounds(self):
+        new_compounds_path = os.path.join(TESTS_DATA_PATH, 'new_compounds_sample/new_compounds.tsv')
+        reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
+        self.assertRaises(FileNotFoundError, Loaders.load_new_compounds, 'random_path.tsv')
+        self.assertRaises(ValueError, Loaders.load_new_compounds, reaction_rules_path)
+        self.assertEqual(Loaders.load_new_compounds(new_compounds_path).shape, (266, 7))
+
+
