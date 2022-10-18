@@ -111,19 +111,11 @@ def main(compounds,
     if match_ms_data:
         if not ms_data_path:
             raise ValueError("The path to the MS data file is required when matching MS data.")
-        if mode == 'mass':
-            ms_field = 'Mass'
-        elif mode == 'mass_diff':
-            ms_field = 'MassDiff'
-        else:
-            raise ValueError(f"Unknown mode: {mode}.")
+
         ms = MSDataMatcher(ms_data_path=ms_data_path,
                            compounds_to_match=f"{output_path}/new_compounds.tsv",
                            output_path=output_path,
-                           compound_id_field='ParentCompound',
-                           compound_smiles_field='ParentCompoundSmiles',
                            mode=mode,
-                           ms_field=ms_field,
                            tolerance=tolerance)
 
         ms.generate_ms_results()
