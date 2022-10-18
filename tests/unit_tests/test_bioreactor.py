@@ -2,6 +2,8 @@ import os
 import shutil
 from unittest import TestCase
 
+import pandas as pd
+
 from biocatalyzer.bioreactor import BioReactor
 
 from tests import TESTS_DATA_PATH
@@ -33,6 +35,11 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                         n_jobs=12)
         br.react()
 
+        self.assertEqual(br.reaction_rules.shape, (8673, 7))
+        self.assertEqual(br.compounds.shape, (3, 2))
+        self.assertIsInstance(br.new_compounds, pd.DataFrame)
+        self.assertEqual(br.new_compounds.shape[1], 7)
+
     def test_bioreactor_all_orgs(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
         patterns_to_remove_path = os.path.join(TESTS_DATA_PATH, 'patterns_to_remove_sample/patterns.tsv')
@@ -45,7 +52,12 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                                        n_jobs=12)
         br_no_orgs_filter.react()
 
-    def test_bioreactor_all_orgs_no_remove_anything(self):
+        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (29297, 7))
+        self.assertEqual(br_no_orgs_filter.compounds.shape, (3, 2))
+        self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
+        self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
+
+    def test_bioreactor_all_orgs_keep_all(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
         patterns_to_remove_path = None
         molecules_to_remove_path = None
@@ -55,3 +67,8 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                                        output_path=self.output_folder,
                                        n_jobs=12)
         br_no_orgs_filter.react()
+
+        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (29297, 7))
+        self.assertEqual(br_no_orgs_filter.compounds.shape, (3, 2))
+        self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
+        self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
