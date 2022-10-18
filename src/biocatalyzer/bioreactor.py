@@ -62,7 +62,7 @@ class BioReactor:
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
         self._set_output_path(self._output_path)
-        self._compounds = Loaders.load_compounds(self._compounds_path, neutralize_compounds)
+        self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
         self._min_atom_count = min_atom_count
@@ -84,6 +84,22 @@ class BioReactor:
         """
         return self._compounds
 
+    @compounds.setter
+    def compounds(self, compounds_path: str):
+        """
+        Set the compounds to use as reactants.
+
+        Parameters
+        ----------
+        compounds_path: str
+            The path to the file containing the compounds to use as reactants.
+        """
+        if compounds_path != self._compounds_path:
+            self._compounds_path = compounds_path
+            self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
     @property
     def reaction_rules(self):
         """
@@ -96,6 +112,21 @@ class BioReactor:
         """
         return self._reaction_rules
 
+    @reaction_rules.setter
+    def reaction_rules(self, reaction_rules_path: str):
+        """
+        Set the reaction rules to use.
+
+        Parameters
+        ----------
+        reaction_rules_path: str
+            The path to the file containing the reaction rules to use.
+        """
+        if reaction_rules_path != self._reaction_rules_path:
+            self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
     @property
     def new_compounds(self):
         """
@@ -106,10 +137,250 @@ class BioReactor:
         pd.DataFrame
             The new compounds generated.
         """
-        if self._new_compounds:
+        if isinstance(self._new_compounds, pd.DataFrame):
             return self._new_compounds
         else:
             raise ValueError('No compounds generated yet. Run the BioReactor react method first.')
+
+    @new_compounds.setter
+    def new_compounds(self, new_compounds: pd.DataFrame):
+        """
+        Set the new compounds generated.
+
+        Parameters
+        ----------
+        new_compounds: pd.DataFrame
+            The new compounds generated.
+        """
+        raise AttributeError('New compounds cannot be set manually! You need to run the react method!')
+
+    @property
+    def output_path(self):
+        """
+        Get the output path.
+
+        Returns
+        -------
+        str
+            The output path.
+        """
+        return self._output_path
+
+    @output_path.setter
+    def output_path(self, output_path: str):
+        """
+        Set the output path.
+
+        Parameters
+        ----------
+        output_path: str
+            The output path.
+        """
+        self._set_output_path(output_path)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def compounds_path(self):
+        """
+        Get the path to the compounds file.
+
+        Returns
+        -------
+        str
+            The path to the compounds file.
+        """
+        return self._compounds_path
+
+    @compounds_path.setter
+    def compounds_path(self, compounds_path: str):
+        """
+        Set the path to the compounds file.
+
+        Parameters
+        ----------
+        compounds_path: str
+            The path to the compounds file.
+        """
+        if compounds_path != self._compounds_path:
+            self._compounds_path = compounds_path
+            print('Loading compounds again with the new path information...')
+            self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def neutralize(self):
+        """
+        Get whether to neutralize compounds.
+
+        Returns
+        -------
+        bool
+            Whether to neutralize compounds.
+        """
+        return self._neutralize
+
+    @neutralize.setter
+    def neutralize(self, neutralize: bool):
+        """
+        Set whether to neutralize compounds.
+
+        Parameters
+        ----------
+        neutralize: bool
+            Whether to neutralize compounds.
+        """
+        if neutralize != self._neutralize:
+            self._neutralize = neutralize
+            print('Loading compounds again with the new neutralize information...')
+            self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def organisms_path(self):
+        """
+        Get the path to the organisms file.
+
+        Returns
+        -------
+        str
+            The path to the organisms file.
+        """
+        return self._organisms_path
+
+    @organisms_path.setter
+    def organisms_path(self, organisms_path: str):
+        """
+        Set the path to the organisms file.
+
+        Parameters
+        ----------
+        organisms_path: str
+            The path to the organisms file.
+        """
+        if organisms_path != self._organisms_path:
+            self._organisms_path = organisms_path
+            print('Loading organisms again with the new path information...')
+            self._orgs = Loaders.load_organisms(self._organisms_path)
+            print('Loading reaction rules again with the new organisms information...')
+            self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def molecules_to_remove_path(self):
+        """
+        Get the path to the molecules to remove file.
+
+        Returns
+        -------
+        str
+            The path to the molecules to remove file.
+        """
+        return self._molecules_to_remove_path
+
+    @molecules_to_remove_path.setter
+    def molecules_to_remove_path(self, molecules_to_remove_path: str):
+        """
+        Set the path to the molecules to remove file.
+
+        Parameters
+        ----------
+        molecules_to_remove_path: str
+            The path to the molecules to remove file.
+        """
+        if molecules_to_remove_path != self._molecules_to_remove_path:
+            self._molecules_to_remove_path = molecules_to_remove_path
+            print('Loading molecules to remove again with the new path information...')
+            self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def patterns_to_remove_path(self):
+        """
+        Get the path to the patterns to remove file.
+
+        Returns
+        -------
+        str
+            The path to the patterns to remove file.
+        """
+        return self._patterns_to_remove_path
+
+    @patterns_to_remove_path.setter
+    def patterns_to_remove_path(self, patterns_to_remove_path: str):
+        """
+        Set the path to the patterns to remove file.
+
+        Parameters
+        ----------
+        patterns_to_remove_path: str
+            The path to the patterns to remove file.
+        """
+        if patterns_to_remove_path != self._patterns_to_remove_path:
+            self._patterns_to_remove_path = patterns_to_remove_path
+            print('Loading patterns to remove again with the new path information...')
+            self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def min_atom_count(self):
+        """
+        Get the minimum atom count.
+
+        Returns
+        -------
+        int
+            The minimum atom count.
+        """
+        return self._min_atom_count
+
+    @min_atom_count.setter
+    def min_atom_count(self, min_atom_count: int):
+        """
+        Set the minimum atom count.
+
+        Parameters
+        ----------
+        min_atom_count: int
+            The minimum atom count.
+        """
+        if min_atom_count != self._min_atom_count:
+            self._min_atom_count = min_atom_count
+        if self._new_compounds is not None:
+            print('Results should be generated again for the new information provided!')
+
+    @property
+    def n_jobs(self):
+        """
+        Get the number of jobs.
+
+        Returns
+        -------
+        int
+            The number of jobs.
+        """
+        return self._n_jobs
+
+    @n_jobs.setter
+    def n_jobs(self, n_jobs: int):
+        """
+        Set the number of jobs.
+
+        Parameters
+        ----------
+        n_jobs: int
+            The number of jobs.
+        """
+        if n_jobs != self._n_jobs:
+            if n_jobs == -1:
+                self._n_jobs = multiprocessing.cpu_count()
+            else:
+                self._n_jobs = n_jobs
 
     def _set_up_files(self):
         self._reaction_rules_path = \
@@ -235,6 +506,7 @@ class BioReactor:
         pd.DataFrame
             The processed results.
         """
+        results.EC_Numbers = results.EC_Numbers.fillna('')
         results = results.groupby('NewCompoundSmiles').agg({'OriginalCompoundID': ';'.join,
                                                             'OriginalCompoundSmiles': ';'.join,
                                                             'OriginalReactionRuleID': ';'.join,
@@ -302,6 +574,7 @@ class BioReactor:
         results = self.process_results(results)
 
         results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
+        print(f"New compopunds saved to {self._output_path}/new_compounds.tsv")
         print(f"{results.shape[0]} unique new compounds generated!")
         self._new_compounds = results
         t1 = time.time()
