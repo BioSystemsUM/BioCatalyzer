@@ -25,7 +25,7 @@ class LoadersTestCase(TestCase):
         self.assertEqual(rules.shape, (51, 7))
 
         rules = Loaders.load_reaction_rules(path=reaction_rules_path, orgs=['eco'])
-        self.assertEqual(rules.shape, (30, 7))
+        self.assertEqual(rules.shape, (7, 7))
 
         self.assertRaises(ValueError, Loaders.load_reaction_rules, compounds_path)
 
