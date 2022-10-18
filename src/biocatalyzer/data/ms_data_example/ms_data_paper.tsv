@@ -1,4 +1,4 @@
-Index	Mass	RT	ParentCompound	SMILES	GoodFilter	FilterNoisyT0	FilterNoisyT12	FilterDifferentMassDefect	FilterLikelyDrugFragment	FilterLikelyDrugMetaboliteFragment	PotentialFragments	IonSpectrum	LeadingMZ	DrugMassFlag	DrugMassDelta	MassDiff	DrugConsumedFlag	NumberOfDrugs	NumberOfIncreasedT12vsT0
+Index	Mass	RT	ParentCompound	ParentCompoundSmiles	GoodFilter	FilterNoisyT0	FilterNoisyT12	FilterDifferentMassDefect	FilterLikelyDrugFragment	FilterLikelyDrugMetaboliteFragment	PotentialFragments	IonSpectrum	LeadingMZ	DrugMassFlag	DrugMassDelta	MassDiff	DrugConsumedFlag	NumberOfDrugs	NumberOfIncreasedT12vsT0
 132	131.004	0.471	ABACAVIR SULFATE	Nc1nc(NC2CC2)c2ncn(C3C=CC(CO)C3)c2n1	1	0	0	0	0	0		(132.011, 6635.45)(263.014, 1512.13)	132.011	0	-155.151	-155.151	0	1	0
 1051	228.148	1.367	ABACAVIR SULFATE	Nc1nc(NC2CC2)c2ncn(C3C=CC(CO)C3)c2n1	0	0	1	0	0	0		(267.1113, 3638.37)(229.1549, 1250438.4)(230.1581, 133991.12)	229.155	0	-58.006	-58.005	0	1	2
 1623	274.974	0.398	ABACAVIR SULFATE	Nc1nc(NC2CC2)c2ncn(C3C=CC(CO)C3)c2n1	0	0	0	1	0	0		(275.9809, 8870.26)(276.9685, 2.83)(277.9561, 2036.09)(278.9561, 2.83)(279.9561, 0.0)	275.981	0	-11.181	-11.181	0	1	1
