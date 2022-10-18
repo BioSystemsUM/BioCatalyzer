@@ -6,6 +6,8 @@ from rdkit.Chem.Fingerprints.FingerprintMols import FingerprintMol
 from rdkit.Chem.MolStandardize.rdMolStandardize import Uncharger
 from rdkit.Chem.rdChemReactions import ReactionFromSmarts, ChemicalReaction
 
+from biocatalyzer.chem._utils import _correct_number_of_parenthesis
+
 
 class ChemUtils:
     """
@@ -36,6 +38,7 @@ class ChemUtils:
     def validate_smiles(smiles: List[str]):
         """
         Validates a list of SMILES.
+        Returns True if at least one SMILES is valid.
 
         Parameters
         ----------
@@ -54,7 +57,7 @@ class ChemUtils:
     @staticmethod
     def _smarts_to_reaction(reaction_smarts: str):
         """
-        Converts a SMARTS string to a reaction.
+        Converts a SMARTS string to a ChemicalReaction object.
 
         Parameters
         ----------
@@ -243,32 +246,9 @@ class ChemUtils:
         str
             The most similar compound SMILES string.
         """
-        smiles_list = ChemUtils._correct_number_of_parenthesis(smiles_list)
+        smiles_list = _correct_number_of_parenthesis(smiles_list)
         if len(smiles_list) == 1:
             return smiles_list[0]
         sims = [ChemUtils.calc_fingerprint_similarity(smiles, s) for s in smiles_list]
         matching = sims.index(max(sims))
         return smiles_list[matching]
-
-    @staticmethod
-    def _correct_number_of_parenthesis(smiles_list: List[str]):
-        """
-        Corrects the number of parenthesis in a list of SMILES strings.
-        Sometimes the react method returns a SMILES string with an incorrect number of parenthesis.
-        This method corrects that issue.
-
-        Parameters
-        ----------
-        smiles_list: List[str]
-            The list of SMILES strings to correct the parenthesis.
-        """
-        corrected_smiles = []
-        for p in smiles_list:
-            # deal with cases where invalid number of parentheses are generated
-            if (p.count('(') + p.count(')')) % 2 != 0:
-                if p[0] == '(':
-                    p = p[1:]
-                elif p[-1] == ')':
-                    p = p[:-1]
-            corrected_smiles.append(p)
-        return corrected_smiles
