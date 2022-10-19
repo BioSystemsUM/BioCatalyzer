@@ -62,6 +62,8 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the reaction rules to use.
         """
+        if not Loaders._verify_file(path):
+            raise FileNotFoundError(f"File {path} not found.")
         rules = pd.read_csv(path, header=0, sep='\t')
 
         if 'InternalID' not in rules.columns:
