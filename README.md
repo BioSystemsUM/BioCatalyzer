@@ -9,7 +9,7 @@ strings and outputs a set of predicted metabolic products and associated enzymes
 
 Installing from Pypi package repository:
 
-`pip install BioCatalyzer`
+`pip install biocatalyzer`
 
 Installing from GitHub:
 
