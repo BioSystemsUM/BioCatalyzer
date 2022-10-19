@@ -250,8 +250,8 @@ class MSDataMatcher:
         """
         Loads the reaction rules data file.
         """
-        self._reaction_rules_path = \
-            os.path.join(DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
+        self._reaction_rules_path = os.path.join(
+            DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path)
 
     def _set_up_new_compounds(self, path: str):
