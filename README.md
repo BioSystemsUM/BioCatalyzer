@@ -5,15 +5,7 @@ BioCatalyzer is a python tool that predicts enzymatic metabolism products using 
 BioCatalyzer is implemented as a Command Line Interface that takes as input a set of compounds represented as SMILES 
 strings and outputs a set of predicted metabolic products and associated enzymes.
 
-<!---
-## Resources:
-
-Paper [Mapping human microbiome drug metabolism by gut bacteria and their genes](https://www.nature.com/articles/s41586-019-1291-3)
-
-Supplementary data [here](https://www.nature.com/articles/s41586-019-1291-3#Sec53)!
---->
-
-## Instalation (Not working yet!)
+## Installation
 
 Installing from Pypi package repository:
 
@@ -162,8 +154,8 @@ Manuscript under preparation!
 
 ### Credits and License
 
-Developed at Centre of Biological Engineering, University of Minho and EMBL ...
+Developed at Centre of Biological Engineering, University of Minho and EMBL Heidelberg (Zimmermann-Kogadeeva).
 
-This project has received funding from the Portuguese FCT and EMBL (?).
+This project has received funding from the Portuguese FCT and EMBL CPP Scientific Visitors Fellowships.
 
-Released under an MIT License. # TODO: check if licence is in accordance with packages/data used
+Released under an MIT License. <!-- # TODO: check if licence is in accordance with packages/data used -->
