@@ -20,6 +20,6 @@ def match_value(v: float, values: List[float], tol: float = 0.1) -> tuple:
         The matched value and the index of the matched value.
     """
     for i, value in enumerate(values):
-        if value - tol < v < value + tol:
+        if value - tol <= v <= value + tol:
             return True, i
     return False, None
