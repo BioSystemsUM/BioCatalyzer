@@ -130,10 +130,9 @@ dmypy.json
 
 .idea/
 
-src/biocatalyzer/results/*
-
-src/biocatalyzer/data/reactionrules/all_reaction_rules_old.tsv
-src/biocatalyzer/data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv
+src/biocatalyzer/results/
 
 src/biocatalyzer/data/organisms/organisms_paper.tsv
 src/biocatalyzer/data/compounds/drugs_paper_subset.csv
+src/biocatalyzer/data/compounds/drugs_paper_all.tsv
+src/biocatalyzer/data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv

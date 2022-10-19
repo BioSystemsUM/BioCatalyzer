@@ -12,7 +12,7 @@ class Loaders:
     """
 
     @staticmethod
-    def load_compounds(path):
+    def load_compounds(path: str, neutralize: bool = False):
         """
         Load compounds to use.
 
@@ -20,13 +20,14 @@ class Loaders:
         ----------
         path: str
             Path to the compounds or string with ;-separated SMILES.
+        neutralize: bool
+            Whether to neutralize compounds or not.
 
         Returns
         -------
         pd.DataFrame:
             pandas dataframe with the compounds to use.
         """
-
         if Loaders._verify_file(path):
             compounds = pd.read_csv(path, header=0, sep='\t')
             if 'smiles' not in compounds.columns:
@@ -37,13 +38,15 @@ class Loaders:
         elif ChemUtils.validate_smiles(path.split(';')):
             df = pd.DataFrame()
             df['smiles'] = path.split(';')
+            if neutralize:
+                df['smiles'] = [ChemUtils.uncharge_smiles(s) for s in df.smiles.values]
             df['compound_id'] = [f'input_compound_{i}' for i in range(len(df))]
             return df
         else:
             raise FileNotFoundError(f"File {path} not found.")
 
     @staticmethod
-    def load_reaction_rules(path='data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv', orgs='ALL'):
+    def load_reaction_rules(path, orgs='ALL'):
         """
         Load the reaction rules to use.
 
@@ -59,8 +62,9 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the reaction rules to use.
         """
+        if not Loaders._verify_file(path):
+            raise FileNotFoundError(f"File {path} not found.")
         rules = pd.read_csv(path, header=0, sep='\t')
-
         if 'InternalID' not in rules.columns:
             raise ValueError('The reaction rules file must contain a column named "InternalID".')
         if 'Reactants' not in rules.columns:
@@ -79,8 +83,8 @@ class Loaders:
             return False
 
         if not isinstance(orgs, str):
-            # TODO: check if adding expontaneous reactions actually makes sense
-            orgs.append('expontaneous')
+            # TODO: check if adding spontaneous reactions actually makes sense
+            orgs.append('spontaneous_reaction')
             rules['has_org'] = rules.apply(lambda x: match_org(x['Organisms'], orgs), axis=1)
             rules = rules[rules['has_org']]
             rules.drop('has_org', axis=1, inplace=True)
@@ -114,28 +118,6 @@ class Loaders:
             return path.split(';')
 
     @staticmethod
-    def load_coreactants(path='data/coreactants/all_coreactants.tsv'):
-        """
-        Load the coreactants to use.
-
-        Parameters
-        ----------
-        path: str
-            Path to the coreactants.
-
-        Returns
-        -------
-        pd.DataFrame:
-            pandas dataframe with the coreactants to use.
-        """
-        coreactants = pd.read_csv(path, header=0, sep='\t')
-        if 'smiles' not in coreactants.columns:
-            raise ValueError('The compounds file must contain a column named "smiles".')
-        if 'compound_id' not in coreactants.columns:
-            raise ValueError('The compounds file must contain a column named "compound_id".')
-        return coreactants
-
-    @staticmethod
     def load_byproducts_to_remove(path):
         """
         Load byproducts to remove from products.
@@ -154,7 +136,7 @@ class Loaders:
             return []
         byproducts = pd.read_csv(path, header=0, sep='\t')
         if 'smiles' not in byproducts.columns:
-            raise ValueError('The coreactants file must contain a column named "smiles".')
+            raise ValueError('The molecules to remove file must contain a column named "smiles".')
         return [MolFromSmiles(sp) for sp in byproducts.smiles.values]
 
     @staticmethod
@@ -176,36 +158,8 @@ class Loaders:
             return []
         patterns = pd.read_csv(path, header=0, sep='\t')
         if 'smarts' not in patterns.columns:
-            raise ValueError('The coreactants file must contain a column named "smarts".')
+            raise ValueError('The patterns to remove file must contain a column named "smarts".')
         return [MolFromSmarts(sp) for sp in patterns.smarts.values]
-
-    @staticmethod
-    def load_masses_to_match(masses):
-        """
-        Load masses to match.
-
-        Parameters
-        ----------
-        masses: str
-            Path to the masses to match.
-
-        Returns
-        -------
-        pd.DataFrame:
-            pandas dataframe with the masses to match.
-        """
-        if not masses:
-            return None
-        elif Loaders._verify_file(masses):
-            masses = pd.read_csv(masses, header=0, sep='\t')
-            if 'mass' not in masses.columns:
-                raise ValueError('The masses file must contain a column named "mass".')
-            return list(masses['mass'].values)
-        else:
-            try:
-                return [float(m) for m in masses.split(';')]
-            except ValueError:
-                raise ValueError('The masses must be an existing file or a list of numbers separated by ";".')
 
     @staticmethod
     def _verify_file(path: str):
@@ -216,7 +170,74 @@ class Loaders:
         ----------
         path: str
             The path to the files to verify.
+
+        Returns
+        -------
+        bool:
+            True if the file exists, False otherwise.
         """
         if not os.path.exists(path):
             return False
         return True
+
+    @staticmethod
+    def load_ms_data(path: str, mode: str = 'mass'):
+        """
+        Load the MS data.
+
+        Parameters
+        ----------
+        path: str
+            Path to the MS data.
+        mode: str
+            The mode to use. Can be 'mass' or 'mass_diff'.
+
+        Returns
+        -------
+        pd.DataFrame:
+            pandas dataframe with the MS data.
+        """
+        if Loaders._verify_file(path):
+            ms_data = pd.read_csv(path, header=0, sep='\t')
+            if 'ParentCompound' not in ms_data.columns:
+                raise ValueError('The MS data file must contain a column named "ParentCompound".')
+            if 'ParentCompoundSmiles' not in ms_data.columns:
+                raise ValueError('The MS data file must contain a column named "ParentCompoundSmiles".')
+            if mode == 'mass':
+                if 'Mass' not in ms_data.columns:
+                    raise ValueError('The MS data file must contain a column named "Mass".')
+            elif mode == 'mass_diff':
+                if 'MassDiff' not in ms_data.columns:
+                    raise ValueError('The MS data file must contain a column named "MassDiff".')
+            else:
+                raise ValueError(f"Mode {mode} not supported.")
+            return ms_data
+        else:
+            raise FileNotFoundError(f"File {path} not found.")
+
+    @staticmethod
+    def load_new_compounds(path: str):
+        """
+        Load the new compounds data to match with the MS data.
+        The file must be a new_compounds.tsv file resulting from running the BioCatalyzer BioReactor.
+
+        Parameters
+        ----------
+        path: str
+            Path to the new compounds data.
+
+        Returns
+        -------
+        pd.DataFrame:
+            pandas dataframe with the new compounds' data.
+        """
+        if Loaders._verify_file(path):
+            new_compounds = pd.read_csv(path, header=0, sep='\t')
+            columns = ['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID', 'NewCompoundID',
+                       'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers']
+            if not all(col in new_compounds.columns for col in columns):
+                raise ValueError(f'The new compounds file must be a result of BioCatalyzer module, i.e. it should '
+                                 f'contain the following columns: {columns}.')
+            return new_compounds
+        else:
+            raise FileNotFoundError(f"File {path} not found.")
