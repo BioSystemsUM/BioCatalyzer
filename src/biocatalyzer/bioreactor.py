@@ -1,3 +1,4 @@
+import logging
 import multiprocessing
 import os
 import time
@@ -102,7 +103,7 @@ class BioReactor:
             self._compounds_path = compounds_path
             self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def reaction_rules(self):
@@ -130,7 +131,7 @@ class BioReactor:
             self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=self._orgs)
             self._reaction_rules_path = reaction_rules_path
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def new_compounds(self):
@@ -183,7 +184,7 @@ class BioReactor:
         """
         self._set_output_path(output_path)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def compounds_path(self):
@@ -209,10 +210,10 @@ class BioReactor:
         """
         if compounds_path != self._compounds_path:
             self._compounds_path = compounds_path
-            print('Loading compounds again with the new path information...')
+            logging.info('Loading compounds again with the new path information...')
             self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def neutralize(self):
@@ -238,10 +239,10 @@ class BioReactor:
         """
         if neutralize != self._neutralize:
             self._neutralize = neutralize
-            print('Loading compounds again with the new neutralize information...')
+            logging.info('Loading compounds again with the new neutralize information...')
             self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def organisms_path(self):
@@ -267,12 +268,12 @@ class BioReactor:
         """
         if organisms_path != self._organisms_path:
             self._organisms_path = organisms_path
-            print('Loading organisms again with the new path information...')
+            logging.info('Loading organisms again with the new path information...')
             self._orgs = Loaders.load_organisms(self._organisms_path)
-            print('Loading reaction rules again with the new organisms information...')
+            logging.info('Loading reaction rules again with the new organisms information...')
             self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def molecules_to_remove_path(self):
@@ -298,10 +299,10 @@ class BioReactor:
         """
         if molecules_to_remove_path != self._molecules_to_remove_path:
             self._molecules_to_remove_path = molecules_to_remove_path
-            print('Loading molecules to remove again with the new path information...')
+            logging.info('Loading molecules to remove again with the new path information...')
             self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def patterns_to_remove_path(self):
@@ -327,10 +328,10 @@ class BioReactor:
         """
         if patterns_to_remove_path != self._patterns_to_remove_path:
             self._patterns_to_remove_path = patterns_to_remove_path
-            print('Loading patterns to remove again with the new path information...')
+            logging.info('Loading patterns to remove again with the new path information...')
             self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def min_atom_count(self):
@@ -357,7 +358,7 @@ class BioReactor:
         if min_atom_count != self._min_atom_count:
             self._min_atom_count = min_atom_count
         if self._new_compounds is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def n_jobs(self):
@@ -580,19 +581,21 @@ class BioReactor:
         results = self.process_results(results)
 
         results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
-        print(f"New compopunds saved to {self._output_path}new_compounds.tsv")
-        print(f"{results.shape[0]} unique new compounds generated!")
+        logging.info(f"New compounds saved to {self._output_path}new_compounds.tsv")
+        logging.info(f"{results.shape[0]} unique new compounds generated!")
         self._new_compounds = results
         t1 = time.time()
-        print(f"Time elapsed: {t1 - t0} seconds")
+        logging.info(f"Time elapsed: {t1 - t0} seconds")
 
 
 if __name__ == '__main__':
+    output_path_ = 'results/results_example/'
     br = BioReactor(compounds_path='data/compounds/drugs_paper_subset.csv',
-                    output_path='results/results_example/',
+                    output_path=output_path_,
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
                     molecules_to_remove_path='data/byproducts_to_remove/byproducts.tsv',
                     min_atom_count=5,
                     n_jobs=12)
+    logging.basicConfig(filename=f'{output_path_}logging_bioreactor.log', level=logging.DEBUG)
     br.react()

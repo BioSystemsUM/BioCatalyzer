@@ -1,3 +1,4 @@
+import logging
 import os
 
 import click
@@ -121,6 +122,7 @@ def main(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
+    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     br.react()
 
     if match_ms_data:
@@ -137,4 +139,4 @@ def main(compounds,
 
 
 if __name__ == "__main__":
-    main()
+    pass

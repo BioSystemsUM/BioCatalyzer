@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from typing import Union
@@ -74,7 +75,7 @@ class MSDataMatcher:
         self._output_path = path
         self._set_output_path(self._output_path)
         if self._matches is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def ms_data_path(self):
@@ -100,10 +101,10 @@ class MSDataMatcher:
         """
         if path != self._ms_data_path:
             self._ms_data_path = path
-            print('Loading MS data with the new path information...')
+            logging.info('Loading MS data with the new path information...')
             self._ms_data = Loaders.load_ms_data(os.path.join(DATA_FILES, self._ms_data_path), self._mode)
         if self._matches is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def compounds_to_match(self):
@@ -128,10 +129,10 @@ class MSDataMatcher:
             The new compounds to match.
         """
         self._set_up_data_files(new_compounds)
-        print('Loading the new compounds to match with the new path information...')
+        logging.info('Loading the new compounds to match with the new path information...')
         self._prepare_mode()
         if self._matches is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def mode(self):
@@ -160,7 +161,7 @@ class MSDataMatcher:
             self._ms_data = Loaders.load_ms_data(os.path.join(DATA_FILES, self._ms_data_path), mode)
             self._prepare_mode()
         if self._matches is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def tolerance(self):
@@ -187,7 +188,7 @@ class MSDataMatcher:
         if tolerance != self._tolerance:
             self._tolerance = tolerance
         if self._matches is not None:
-            print('Results should be generated again for the new information provided!')
+            logging.warning('Results should be generated again for the new information provided!')
 
     @property
     def matches(self):
@@ -350,17 +351,18 @@ class MSDataMatcher:
         else:
             raise ValueError('The mode must be either "mass" or "mass_dif".')
         self._matches.to_csv(self._output_path + '/matches.tsv', sep='\t', index=False)
-        print(f"Matches saved to {self._output_path}/matches.tsv")
-        print(f"{self._matches.shape[0]} matches found!")
+        logging.info(f"Matches saved to {self._output_path}/matches.tsv")
+        logging.info(f"{self._matches.shape[0]} matches found!")
         t1 = time.time()
-        print(f"Time elapsed: {t1 - t0} seconds")
+        logging.info(f"Time elapsed: {t1 - t0} seconds")
 
 
 if __name__ == '__main__':
+    output_path_ = 'results/results_example/'
     ms = MSDataMatcher(ms_data_path='data/ms_data_example/ms_data_paper.tsv',
                        compounds_to_match='results/results_example/new_compounds.tsv',
-                       output_path='results/results_example',
+                       output_path=output_path_,
                        mode='mass',
                        tolerance=0.0015)
-
+    logging.basicConfig(filename=f'{output_path_}logging_matcher.log', level=logging.DEBUG)
     ms.generate_ms_results()
