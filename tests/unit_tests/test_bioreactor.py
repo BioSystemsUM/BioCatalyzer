@@ -36,7 +36,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                         n_jobs=12)
         br.react()
 
-        self.assertEqual(br.reaction_rules.shape, (8673, 7))
+        self.assertEqual(br.reaction_rules.shape, (1368, 7))
         self.assertEqual(br.compounds.shape, (3, 2))
         self.assertIsInstance(br.new_compounds, pd.DataFrame)
         self.assertEqual(br.new_compounds.shape[1], 7)
@@ -53,7 +53,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                                        n_jobs=12)
         br_no_orgs_filter.react()
 
-        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (29297, 7))
+        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (3332, 7))
         self.assertEqual(br_no_orgs_filter.compounds.shape, (3, 2))
         self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
         self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
@@ -69,7 +69,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                                        n_jobs=-1)
         br_no_orgs_filter.react()
 
-        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (29297, 7))
+        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (3332, 7))
         self.assertEqual(br_no_orgs_filter.compounds.shape, (3, 2))
         self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
         self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
