@@ -63,6 +63,16 @@ class TestChemUtils(TestCase):
         for s in smiles:
             self.assertFalse(check_if_molecule_has_hydrogens(ChemUtils._remove_hs(MolFromSmiles(s))))
 
+        invalid_smiles = 'Cn1c(O)c2c(ncn2C)n(C)c1=O'
+        self.assertIsNone(ChemUtils._remove_hs(MolFromSmiles(invalid_smiles)))
+
+        kekulize_exception_mol = MolFromSmiles('c1ccccc1')
+        kekulize_exception_mol.GetAtomWithIdx(0).SetAtomicNum(8)
+        self.assertEqual(ChemUtils._remove_hs(kekulize_exception_mol), kekulize_exception_mol)
+
+        atom_valence_exception_mol = MolFromSmiles('CN(C)(C)C', sanitize=False)
+        self.assertEqual(ChemUtils._remove_hs(atom_valence_exception_mol), atom_valence_exception_mol)
+
     def test_react(self):
         smiles = ['CN1C=NC2=C1C(=O)N(C(=O)N2C)C',
                   'C(C1C(C(C(C(O1)O)O)O)O)O',
@@ -82,6 +92,11 @@ class TestChemUtils(TestCase):
         reaction_smiles = ChemUtils.react([known_reactant, coreactant], known_rule)
         self.assertEqual(known_reactant, reaction_smiles[0].split('.')[0])
         self.assertEqual(coreactant, reaction_smiles[0].split('.')[1].split('>>')[0])
+
+        self.assertIsNone(ChemUtils.react(smiles[0], smarts[0]))
+
+        invalid_smiles = 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C('
+        self.assertEqual(len(ChemUtils.react(invalid_smiles, smarts[1])), 0)
 
     def test_create_reaction_instances(self):
         rule_smarts = '[#7:1].[#8:2].[#8:3]=[#6:4]1-[#6:5]=[#6:6]-[#6:7](=[#8:8])-[#6:9]=[#6:10]-1>>[#7+:1]-[#8:2].[#8:3]-[#6:4]1:[#6:10]:[#6:9]:[#6:7](-[#8:8]):[#6:6]:[#6:5]:1'
@@ -126,6 +141,11 @@ class TestChemUtils(TestCase):
         self.assertTrue(ChemUtils.match_masses(smiles[0], masses, mass_tolerance=0.02)[0])
         self.assertFalse(ChemUtils.match_masses(smiles[0], masses, mass_tolerance=0.01)[0])
 
+        self.assertTrue(ChemUtils.match_masses(smiles[0], None, mass_tolerance=0.01)[0])
+
+        invalid_smiles = 'CC(=O)O[IH2+2](O)OC(C)=O('
+        self.assertFalse(ChemUtils.match_masses(invalid_smiles, masses, mass_tolerance=0.01)[0])
+
     def test_calc_fingerprint_similarity(self):
         smile = 'C[NH+](C)CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12'
         smiles_to_compare = ['CO',
@@ -159,6 +179,8 @@ class TestChemUtils(TestCase):
         smiles_to_compare_3 = ['*c1c(*)c(O)c(*)c(*)c1O', 'CCCC(=O)Nc1ccc(=OCC(O)C[NH2+]C(C)C)c(C(C)=O)c1']
 
         self.assertEqual(ChemUtils.most_similar_compound(smiles2, smiles_to_compare_3), smiles_to_compare_3[0])
+
+        self.assertEqual(ChemUtils.most_similar_compound(smiles2, [smiles2]), smiles2)
 
     def test_correct_number_of_parenthesis(self):
         smiles = ['CO)',
