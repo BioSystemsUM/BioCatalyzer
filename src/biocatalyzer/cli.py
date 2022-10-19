@@ -18,6 +18,12 @@ from biocatalyzer.matcher import MSDataMatcher
               type=bool,
               default=False,
               help="Whether to neutralize input compounds and newly generated compounds.")
+@click.option("--reaction_rules",
+              "reaction_rules",
+              type=click.Path(),
+              default=None,
+              show_default=True,
+              help="Path to reaction rules file.")
 @click.option("--organisms",
               "organisms",
               type=click.Path(exists=True),
@@ -81,6 +87,7 @@ from biocatalyzer.matcher import MSDataMatcher
 def main(compounds,
          output_path,
          neutralize,
+         reaction_rules,
          organisms,
          patterns_to_remove,
          molecules_to_remove,
@@ -100,6 +107,7 @@ def main(compounds,
     """
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
+                    reaction_rules_path=reaction_rules,
                     neutralize_compounds=neutralize,
                     organisms_path=organisms,
                     patterns_to_remove_path=patterns_to_remove,
