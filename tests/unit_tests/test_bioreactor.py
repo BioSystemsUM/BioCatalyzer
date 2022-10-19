@@ -147,4 +147,5 @@ class TestBioReactor(BioReactorTestCase, TestCase):
 
         _ = br.n_jobs
         br.n_jobs = -1
+        br.n_jobs = 6
 
