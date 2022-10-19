@@ -1,7 +1,11 @@
+import os
+
 import click
 
 from biocatalyzer.bioreactor import BioReactor
 from biocatalyzer.matcher import MSDataMatcher
+
+DATA_FILES = os.path.dirname(__file__)
 
 
 @click.command()
@@ -20,8 +24,8 @@ from biocatalyzer.matcher import MSDataMatcher
               help="Whether to neutralize input compounds and newly generated compounds.")
 @click.option("--reaction_rules",
               "reaction_rules",
-              type=click.Path(),
-              default=None,
+              type=str,
+              default='default',
               show_default=True,
               help="Path to reaction rules file.")
 @click.option("--organisms",
@@ -32,15 +36,15 @@ from biocatalyzer.matcher import MSDataMatcher
               )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",
-              type=click.File('r'),
-              default=None,
+              type=str,
+              default='default',
               show_default=True,
               help="A user defined file containing SMARTS patterns. Products that match a pattern will be removed.",
               )
 @click.option("--molecules_to_remove",
               "molecules_to_remove",
-              type=click.File('r'),
-              default=None,
+              type=str,
+              default='default',
               show_default=True,
               help="A user defined file containing molecules encoded as SMILES to be removed from the products.",
               )
@@ -105,6 +109,9 @@ def main(compounds,
 
         output_path: Path to the output directory.
     """
+    if reaction_rules is None:
+        reaction_rules = os.path.join(
+                DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
                     reaction_rules_path=reaction_rules,
