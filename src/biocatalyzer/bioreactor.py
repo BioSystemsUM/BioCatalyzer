@@ -23,6 +23,7 @@ class BioReactor:
                  compounds_path: str,
                  output_path: str,
                  neutralize_compounds: bool = False,
+                 reaction_rules_path: str = 'default',
                  organisms_path: str = None,
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
@@ -39,6 +40,8 @@ class BioReactor:
             The path directory to save the results to.
         neutralize_compounds: bool
             Whether to neutralize input compounds and generated compounds.
+        reaction_rules_path: str
+            The path to the file containing the reaction rules.
         organisms_path: str
             The path to the file containing the organisms to filter the reaction rules by.
         molecules_to_remove_path: str
@@ -56,10 +59,9 @@ class BioReactor:
         self._output_path = output_path
         self._neutralize = neutralize_compounds
         self._organisms_path = organisms_path
+        self._reaction_rules_path = reaction_rules_path
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
-        self._reaction_rules_path = os.path.join(
-            DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
@@ -386,6 +388,9 @@ class BioReactor:
                 self._n_jobs = n_jobs
 
     def _set_up_files(self):
+        if self._reaction_rules_path == 'default':
+            self._reaction_rules_path = os.path.join(
+                DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
         if self._molecules_to_remove_path == 'default':
             self._molecules_to_remove_path = os.path.join(DATA_FILES, 'data/byproducts_to_remove/byproducts.tsv')
         if self._patterns_to_remove_path == 'default':
