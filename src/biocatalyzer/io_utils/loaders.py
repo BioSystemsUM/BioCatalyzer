@@ -65,7 +65,6 @@ class Loaders:
         if not Loaders._verify_file(path):
             raise FileNotFoundError(f"File {path} not found.")
         rules = pd.read_csv(path, header=0, sep='\t')
-        print(rules.columns)
         if 'InternalID' not in rules.columns:
             raise ValueError('The reaction rules file must contain a column named "InternalID".')
         if 'Reactants' not in rules.columns:
