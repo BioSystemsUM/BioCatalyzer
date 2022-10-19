@@ -89,6 +89,8 @@ class ChemUtils:
         Mol
             The molecule wit implicit hydrogen atoms.
         """
+        if mol is None:
+            return None
         try:
             return RemoveHs(mol)
         except Chem.rdchem.KekulizeException:
@@ -124,8 +126,7 @@ class ChemUtils:
             return []
         try:
             return ChemUtils._create_reaction_instances(reaction, mol)
-        except ValueError as e:
-            print(e)
+        except ValueError:
             return None
 
     @staticmethod
