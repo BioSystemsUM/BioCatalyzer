@@ -154,7 +154,7 @@ Manuscript under preparation!
 
 ### Credits and License
 
-Developed at Centre of Biological Engineering, University of Minho and EMBL Heidelberg (Zimmermann-Kogadeeva).
+Developed at Centre of Biological Engineering, University of Minho and EMBL Heidelberg (Zimmermann-Kogadeeva Group).
 
 This project has received funding from the Portuguese FCT and EMBL CPP Scientific Visitors Fellowships.
 
