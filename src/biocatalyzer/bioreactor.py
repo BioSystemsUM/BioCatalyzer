@@ -58,6 +58,8 @@ class BioReactor:
         self._organisms_path = organisms_path
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
+        self._reaction_rules_path = os.path.join(
+            DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
@@ -123,7 +125,8 @@ class BioReactor:
             The path to the file containing the reaction rules to use.
         """
         if reaction_rules_path != self._reaction_rules_path:
-            self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=self._orgs)
+            self._reaction_rules_path = reaction_rules_path
         if self._new_compounds is not None:
             print('Results should be generated again for the new information provided!')
 
@@ -383,8 +386,6 @@ class BioReactor:
                 self._n_jobs = n_jobs
 
     def _set_up_files(self):
-        self._reaction_rules_path = \
-            os.path.join(DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates.tsv')
         if self._molecules_to_remove_path == 'default':
             self._molecules_to_remove_path = os.path.join(DATA_FILES, 'data/byproducts_to_remove/byproducts.tsv')
         if self._patterns_to_remove_path == 'default':
@@ -574,7 +575,7 @@ class BioReactor:
         results = self.process_results(results)
 
         results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
-        print(f"New compopunds saved to {self._output_path}/new_compounds.tsv")
+        print(f"New compopunds saved to {self._output_path}new_compounds.tsv")
         print(f"{results.shape[0]} unique new compounds generated!")
         self._new_compounds = results
         t1 = time.time()
