@@ -1,6 +1,7 @@
 import click
 
 from biocatalyzer.bioreactor import BioReactor
+from biocatalyzer.matcher import MSDataMatcher
 
 
 @click.command()
@@ -12,18 +13,11 @@ from biocatalyzer.bioreactor import BioReactor
                 type=click.Path(),
                 required=True,
                 )
-@click.option("--reaction_rules",
-              "reaction_rules",
-              type=click.Path(exists=True),
-              default=None,
-              help="The path to the user defined file containing the reaction rules to use.",
-              )
-@click.option("--coreactants",
-              "coreactants",
-              type=click.Path(exists=True),
-              default=None,
-              help="The path to the user defined file containing the coreactants to use.",
-              )
+@click.option("--neutralize",
+              "neutralize",
+              type=bool,
+              default=False,
+              help="Whether to neutralize input compounds and newly generated compounds.")
 @click.option("--organisms",
               "organisms",
               type=click.Path(exists=True),
@@ -32,14 +26,14 @@ from biocatalyzer.bioreactor import BioReactor
               )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",
-              type=click.Path(exists=True),
+              type=click.File('r'),
               default=None,
               show_default=True,
               help="A user defined file containing SMARTS patterns. Products that match a pattern will be removed.",
               )
 @click.option("--molecules_to_remove",
               "molecules_to_remove",
-              type=click.Path(exists=True),
+              type=click.File('r'),
               default=None,
               show_default=True,
               help="A user defined file containing molecules encoded as SMILES to be removed from the products.",
@@ -51,19 +45,31 @@ from biocatalyzer.bioreactor import BioReactor
               show_default=True,
               help="The minimum atom count of a molecule (molecules with less atoms are removed from the products).",
               )
-@click.option("--masses",
-              "masses",
-              type=str,
+@click.option("--match_ms_data",
+              "match_ms_data",
+              type=bool,
+              default=False,
+              show_default=True,
+              help="Whether to match the generated products with MS data.")
+@click.option("--ms_data_path",
+              "ms_data_path",
+              type=click.File('r'),
               default=None,
               show_default=True,
-              help="A user defined file containing masses to match. Only products that match a mass will be kept.",
-              )
-@click.option("--mass_tolerance",
-              "mass_tolerance",
+              help="The path to the file containing the MS data to use.")
+@click.option("--mode",
+              "mode",
+              type=click.Choice(['mass', 'mass_diff']),
+              default='mass',
+              show_default=True,
+              help="The mode to use for the MS data matching (mass for ExactMass matching or mass_dif for ExactMass "
+                   "differences matching).")
+@click.option("--tolerance",
+              "tolerance",
               type=float,
               default=0.02,
               show_default=True,
-              help="The mass tolerance to use when matching masses.",
+              help="The mass tolerance to use when matching MS data.",
               )
 @click.option("--n_jobs",
               "n_jobs",
@@ -74,16 +80,17 @@ from biocatalyzer.bioreactor import BioReactor
               )
 def main(compounds,
          output_path,
-         reaction_rules,
-         coreactants,
+         neutralize,
          organisms,
          patterns_to_remove,
          molecules_to_remove,
          min_atom_count,
-         masses,
-         mass_tolerance,
+         match_ms_data,
+         ms_data_path,
+         mode,
+         tolerance,
          n_jobs):
-    """Run the biocatalyzer.
+    """Run the BioCatalyzer and the MSDataMatcher (optional).
 
     Mandatory arguments:
 
@@ -93,16 +100,25 @@ def main(compounds,
     """
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
-                    reaction_rules_path=reaction_rules,
-                    coreactants_path=coreactants,
+                    neutralize_compounds=neutralize,
                     organisms_path=organisms,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
-                    masses=masses,
-                    mass_tolerance=mass_tolerance,
                     n_jobs=n_jobs)
     br.react()
+
+    if match_ms_data:
+        if not ms_data_path:
+            raise ValueError("The path to the MS data file is required when matching MS data.")
+
+        ms = MSDataMatcher(ms_data_path=ms_data_path,
+                           compounds_to_match=f"{output_path}/new_compounds.tsv",
+                           output_path=output_path,
+                           mode=mode,
+                           tolerance=tolerance)
+
+        ms.generate_ms_results()
 
 
 if __name__ == "__main__":

@@ -1,0 +1,3 @@
+pattern_id	smarts
+CoA	O=C(NCC*)CCNC(=O)C(O)C(C)(C)COP(=O)(*)OP(=O)(*)OC*3O*(n2cnc1c(ncnc12)N)*(O)*3OP(=O)(*)*
+NAD	**1*(*)*(COP(*)(=O)OP(*)(=O)OC*2O*(*)*(*)*2*)O*1*
