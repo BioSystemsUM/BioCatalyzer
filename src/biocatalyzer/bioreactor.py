@@ -577,6 +577,12 @@ class BioReactor:
                 results_ = pool.starmap(self._react_single, zip([compound] * self._reaction_rules.shape[0],
                                                                 self._reaction_rules.SMARTS))
 
+        not_empty = [not df.empty for df in results_]
+        if not any(not_empty):
+            logging.info('No new compounds could be generated using this reaction rules.')
+            t1 = time.time()
+            logging.info(f"Time elapsed: {t1 - t0} seconds")
+            return
         results = pd.concat(results_)
         results = self.process_results(results)
 
