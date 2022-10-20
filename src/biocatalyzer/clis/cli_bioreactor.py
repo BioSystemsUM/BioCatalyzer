@@ -84,7 +84,6 @@ def bioreactor_cli(compounds,
     if reaction_rules is None:
         reaction_rules = os.path.join(
             DATA_FILES, '../data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
                     reaction_rules_path=reaction_rules,
@@ -94,6 +93,7 @@ def bioreactor_cli(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
+    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     br.react()
 
 

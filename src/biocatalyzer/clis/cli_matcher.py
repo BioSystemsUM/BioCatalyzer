@@ -48,13 +48,12 @@ def matcher_cli(ms_data,
 
         output_path: Path to the output directory.
     """
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     ms = MSDataMatcher(ms_data_path=ms_data,
                        compounds_to_match=compounds_to_match,
                        output_path=output_path,
                        mode=mode,
                        tolerance=tolerance)
-
+    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     ms.generate_ms_results()
 
 
