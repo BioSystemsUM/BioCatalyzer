@@ -41,7 +41,7 @@ class MSDataMatcher:
             The tolerance for the mass matching.
         """
         self._ms_data_path = ms_data_path
-        self._ms_data = Loaders.load_ms_data(os.path.join(DATA_FILES, self._ms_data_path), mode)
+        self._ms_data = Loaders.load_ms_data(self._ms_data_path, mode)
         self._output_path = output_path
         self._set_output_path(self._output_path)
         self._mode = mode
@@ -102,7 +102,7 @@ class MSDataMatcher:
         if path != self._ms_data_path:
             self._ms_data_path = path
             logging.info('Loading MS data with the new path information...')
-            self._ms_data = Loaders.load_ms_data(os.path.join(DATA_FILES, self._ms_data_path), self._mode)
+            self._ms_data = Loaders.load_ms_data(self._ms_data_path, self._mode)
         if self._matches is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -158,7 +158,7 @@ class MSDataMatcher:
         """
         if mode != self._mode:
             self._mode = mode
-            self._ms_data = Loaders.load_ms_data(os.path.join(DATA_FILES, self._ms_data_path), mode)
+            self._ms_data = Loaders.load_ms_data(self._ms_data_path, mode)
             self._prepare_mode()
         if self._matches is not None:
             logging.warning('Results should be generated again for the new information provided!')
