@@ -14,7 +14,8 @@ class MSDataMatcherTestCase(TestCase):
     def setUp(self):
         self.output_folder = 'results/'
         self.new_output_folder = 'new_output_path/'
-        os.mkdir(self.output_folder)
+        if not os.path.exists(self.output_folder):
+            os.makedirs(self.output_folder)
 
     def tearDown(self):
         if os.path.exists(self.output_folder):

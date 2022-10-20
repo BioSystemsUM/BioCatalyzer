@@ -9,7 +9,8 @@ class BioReactorCLITestCase(TestCase):
 
     def setUp(self):
         self.output_folder = 'results/'
-        os.mkdir(self.output_folder)
+        if not os.path.exists(self.output_folder):
+            os.makedirs(self.output_folder)
         self.compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
         self.output_path = self.output_folder
         self.neutralize = False

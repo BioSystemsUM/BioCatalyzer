@@ -10,7 +10,8 @@ class MatchMSDataCLITestCase(TestCase):
     def setUp(self):
         self.output_folder = 'results/'
         self.output_path = self.output_folder
-        os.mkdir(self.output_folder)
+        if not os.path.exists(self.output_folder):
+            os.makedirs(self.output_folder)
         self.ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
         self.compounds_to_match_path = os.path.join(TESTS_DATA_PATH, 'results_sample/new_compounds.tsv')
         self.mode = 'mass'
