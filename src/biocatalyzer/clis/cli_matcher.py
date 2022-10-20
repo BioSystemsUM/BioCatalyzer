@@ -6,9 +6,9 @@ import click
                 type=str,
                 required=True,
                 )
-def main(arg):
+def matcher_cli(arg):
     print(f"{arg}_2")
 
 
 if __name__ == "__main__":
-    main()
+    pass
