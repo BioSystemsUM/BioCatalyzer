@@ -1,3 +1,4 @@
+import logging
 import os
 
 import pandas as pd
@@ -111,10 +112,12 @@ class Loaders:
             orgs = pd.read_csv(path, header=0, sep='\t')
             if 'org_id' not in orgs.columns:
                 raise ValueError('The organisms file must contain a column named "org_id".')
+            logging.info(f'Using {list(orgs.org_id.values)} as the Organisms.')
             return list(orgs.org_id.values)
         elif len(path.split('.')) > 1:
             raise FileNotFoundError(f"File {path} not found.")
         else:
+            logging.info(f'Using {path.split(";")} as the Organisms.')
             return path.split(';')
 
     @staticmethod

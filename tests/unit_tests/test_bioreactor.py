@@ -14,7 +14,8 @@ class BioReactorTestCase(TestCase):
     def setUp(self):
         self.output_folder = 'results/'
         self.new_output_folder = 'new_output_path/'
-        os.mkdir(self.output_folder)
+        if not os.path.exists(self.output_folder):
+            os.makedirs(self.output_folder)
 
     def tearDown(self):
         if os.path.exists(self.output_folder):
@@ -37,7 +38,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
         br.react()
 
         self.assertEqual(br.reaction_rules.shape, (1368, 7))
-        self.assertEqual(br.compounds.shape, (3, 2))
+        self.assertEqual(br.compounds.shape, (4, 2))
         self.assertIsInstance(br.new_compounds, pd.DataFrame)
         self.assertEqual(br.new_compounds.shape[1], 7)
 
@@ -54,7 +55,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
         br_no_orgs_filter.react()
 
         self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (3332, 7))
-        self.assertEqual(br_no_orgs_filter.compounds.shape, (3, 2))
+        self.assertEqual(br_no_orgs_filter.compounds.shape, (4, 2))
         self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
         self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
 
@@ -70,7 +71,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
         br_no_orgs_filter.react()
 
         self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (3332, 7))
-        self.assertEqual(br_no_orgs_filter.compounds.shape, (3, 2))
+        self.assertEqual(br_no_orgs_filter.compounds.shape, (4, 2))
         self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
         self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
 
