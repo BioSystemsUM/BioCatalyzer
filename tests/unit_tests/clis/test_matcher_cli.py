@@ -35,7 +35,7 @@ class TestMatcherCLI(MatchMSDataCLITestCase, TestCase):
     def test_matcher_cli_invalid_ms_data_path(self):
         # missing argument 'OUTPUT_PATH'
         exit_status = os.system('matcher_cli dummy_arg_1 dummy_arg_2 dummy_arg_3')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, 256)
 
     def test_matcher_cli_missing_compounds_arg(self):
         # dummy argumets (FileNotFoundError)
