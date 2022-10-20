@@ -2,8 +2,10 @@ import logging
 import multiprocessing
 import os
 import time
+import uuid
 from typing import Union
 
+import numpy as np
 import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
@@ -411,8 +413,8 @@ class BioReactor:
             os.makedirs(output_path)
         else:
             if os.path.exists(output_path + '/results.tsv') or os.path.exists(output_path + '/new_compounds.tsv'):
-                raise FileExistsError(f"File {output_path} already exists. Define a different output path so that "
-                                      f"previous results are not overwritten.")
+                raise FileExistsError(f"Results in {output_path} already exists. Define a different output path so "
+                                      f"that previous results are not overwritten.")
 
     def _match_patterns(self, smiles: str):
         """
@@ -514,12 +516,12 @@ class BioReactor:
             The processed results.
         """
         results.EC_Numbers = results.EC_Numbers.fillna('')
-        results = results.groupby('NewCompoundSmiles').agg({'OriginalCompoundID': ';'.join,
-                                                            'OriginalCompoundSmiles': ';'.join,
-                                                            'OriginalReactionRuleID': ';'.join,
-                                                            'NewCompoundID': 'first',
-                                                            'NewReactionSmiles': ';'.join,
-                                                            'EC_Numbers': ';'.join}).reset_index()
+        results = results.groupby(['OriginalCompoundID', 'NewCompoundSmiles']).agg({'OriginalCompoundSmiles': 'first',
+                                                                                    'OriginalReactionRuleID': ';'.join,
+                                                                                    'NewCompoundID': 'first',
+                                                                                    'NewReactionSmiles': ';'.join,
+                                                                                    'EC_Numbers': ';'.join}
+                                                                                   ).reset_index()
         # reorder columns
         results = results[['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID', 'NewCompoundID',
                            'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers']]
@@ -529,7 +531,15 @@ class BioReactor:
         results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x:
                                                                                     ';'.join(list(set(x.split(';')))))
         results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: ';'.join(list(set(x.split(';')))))
-        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: ';'.join(list(set(x.split(';')))))
+
+        def merge_ec_numbers(x):
+            if len(x) == 1 and x[0] == '':
+                return np.NaN
+            x = list(set(x.split(';')))
+            x = [i for i in x if i != '']
+            return ';'.join(x)
+
+        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: merge_ec_numbers(x))
         return results
 
     def _react_single(self, smiles: str, smarts: str):
@@ -563,8 +573,9 @@ class BioReactor:
                         if self._neutralize:
                             most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
                         ecs = self._get_ec_numbers(smarts_id)
-                        new_compounds.loc[len(new_compounds)] = [smiles_id, smiles, smarts_id, f"{smiles_id}_{i}",
-                                                                 most_similar_product, result, ecs]
+                        new_compounds.loc[len(new_compounds)] = [smiles_id, smiles, smarts_id,
+                                                                 f"{smiles_id}_{uuid.uuid4()}", most_similar_product,
+                                                                 result, ecs]
         return new_compounds
 
     def react(self):
@@ -572,11 +583,18 @@ class BioReactor:
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
+        results_ = []
         for compound in self._compounds.smiles:
             with multiprocessing.Pool(self._n_jobs) as pool:
-                results_ = pool.starmap(self._react_single, zip([compound] * self._reaction_rules.shape[0],
-                                                                self._reaction_rules.SMARTS))
+                results_.extend(pool.starmap(self._react_single, zip([compound] * self._reaction_rules.shape[0],
+                                                                     self._reaction_rules.SMARTS)))
 
+        not_empty = [not df.empty for df in results_]
+        if not any(not_empty):
+            logging.info('No new compounds could be generated using this reaction rules.')
+            t1 = time.time()
+            logging.info(f"Time elapsed: {t1 - t0} seconds")
+            return False
         results = pd.concat(results_)
         results = self.process_results(results)
 
@@ -586,6 +604,7 @@ class BioReactor:
         self._new_compounds = results
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
+        return True
 
 
 if __name__ == '__main__':

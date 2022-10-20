@@ -11,7 +11,7 @@ class LoadersTestCase(TestCase):
     def test_load_compounds(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
         cmps = Loaders.load_compounds(path=compounds_path)
-        self.assertEqual(cmps.shape, (3, 2))
+        self.assertEqual(cmps.shape, (4, 2))
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         self.assertRaises(ValueError, Loaders.load_compounds, reaction_rules_path)
 
