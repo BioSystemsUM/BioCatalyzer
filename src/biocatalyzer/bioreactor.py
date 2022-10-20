@@ -525,15 +525,20 @@ class BioReactor:
         # reorder columns
         results = results[['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID', 'NewCompoundID',
                            'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers']]
-        results['OriginalCompoundID'] = results['OriginalCompoundID'].apply(lambda x: ';'.join(list(set(x.split(';')))))
-        results['OriginalCompoundSmiles'] = results['OriginalCompoundSmiles'].apply(lambda x:
-                                                                                    ';'.join(list(set(x.split(';')))))
-        results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x:
-                                                                                    ';'.join(list(set(x.split(';')))))
-        results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: ';'.join(list(set(x.split(';')))))
+
+        def merge_fields(value):
+            if len(value.split(';')) == 1:
+                return value
+            values = []
+            for v in value.split(';'):
+                if v not in values:
+                    values.append(v)
+            return ';'.join(values)
+        results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x: merge_fields(x))
+        results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: merge_fields(x))
 
         def merge_ec_numbers(x):
-            if len(x) == 1 and x[0] == '':
+            if x == '':
                 return np.NaN
             x = list(set(x.split(';')))
             x = [i for i in x if i != '']
