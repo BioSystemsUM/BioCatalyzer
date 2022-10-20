@@ -64,7 +64,7 @@ DATA_FILES = os.path.dirname(__file__)
               help="Whether to match the generated products with MS data.")
 @click.option("--ms_data_path",
               "ms_data_path",
-              type=click.File('r'),
+              type=str,
               default=None,
               show_default=True,
               help="The path to the file containing the MS data to use.")
@@ -123,19 +123,23 @@ def biocatalyzer_cli(compounds,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
     logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
-    br.react()
+    brr = br.react()
 
     if match_ms_data:
         if not ms_data_path:
             raise ValueError("The path to the MS data file is required when matching MS data.")
 
-        ms = MSDataMatcher(ms_data_path=ms_data_path,
-                           compounds_to_match=f"{output_path}/new_compounds.tsv",
-                           output_path=output_path,
-                           mode=mode,
-                           tolerance=tolerance)
+        if not brr:
+            logging.info("No products were generated. No MS data matching will be performed.")
+        else:
 
-        ms.generate_ms_results()
+            ms = MSDataMatcher(ms_data_path=ms_data_path,
+                               compounds_to_match=os.path.join(output_path, 'new_compounds.tsv'),
+                               output_path=output_path,
+                               mode=mode,
+                               tolerance=tolerance)
+
+            ms.generate_ms_results()
 
 
 if __name__ == "__main__":
