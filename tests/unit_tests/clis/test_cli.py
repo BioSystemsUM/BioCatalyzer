@@ -58,3 +58,13 @@ class TestBioCatalyzerCLI(BioCatalyzerCLITestCase, TestCase):
                                 f"--ms_data_path={self.ms_data_path} --mode={self.mode} --tolerance={self.tolerance} "
                                 f"--n_jobs={self.n_jobs}")
         self.assertEqual(exit_status, 0)
+
+    def test_biocatalyzer_full2(self):
+        exit_status = os.system(f"biocatalyzer_cli {self.compounds_path} {self.output_folder} "
+                                f"--neutralize={self.neutralize} --reaction_rules={self.reaction_rules_path} "
+                                f"--patterns_to_remove={None} "
+                                f"--molecules_to_remove={None} "
+                                f"--min_atom_count={self.min_atom_count} --match_ms_data={self.match_ms_data} "
+                                f"--ms_data_path={self.ms_data_path} --mode={self.mode} --tolerance={self.tolerance} "
+                                f"--n_jobs={self.n_jobs}")
+        self.assertEqual(exit_status, 0)
