@@ -106,7 +106,7 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the organisms to use.
         """
-        if not path:
+        if path is None:
             return 'ALL'
         if Loaders._verify_file(path):
             orgs = pd.read_csv(path, header=0, sep='\t')
@@ -135,7 +135,7 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the byproducts to remove.
         """
-        if not path:
+        if path is None:
             return []
         byproducts = pd.read_csv(path, header=0, sep='\t')
         if 'smiles' not in byproducts.columns:
@@ -157,7 +157,7 @@ class Loaders:
         pd.DataFrame:
             pandas dataframe with the patterns to remove.
         """
-        if not path:
+        if path is None:
             return []
         patterns = pd.read_csv(path, header=0, sep='\t')
         if 'smarts' not in patterns.columns:
