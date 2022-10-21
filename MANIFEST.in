@@ -1,2 +1,0 @@
-graft src/biocatalyzer/data/byproducts_to_remove/
-graft src/biocatalyzer/data/patterns_to_remove/
