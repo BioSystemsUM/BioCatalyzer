@@ -9,6 +9,7 @@ from typing import Union
 import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
+from tqdm import tqdm
 
 from biocatalyzer._utils import _empty_dfs, _merge_fields
 from biocatalyzer.chem import ChemUtils
@@ -599,7 +600,7 @@ class BioReactor:
         t0 = time.time()
         params = list(itertools.product(self._compounds.smiles, self._reaction_rules.SMARTS))
         with multiprocessing.Pool(self._n_jobs) as pool:
-            results_ = pool.starmap(self._react_single, params)
+            results_ = pool.starmap(self._react_single, tqdm(params, total=len(params)))
 
         if _empty_dfs(results_):
             logging.info('No new compounds could be generated using this reaction rules.')
