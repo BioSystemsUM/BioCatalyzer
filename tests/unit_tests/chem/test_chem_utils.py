@@ -186,7 +186,7 @@ class TestChemUtils(TestCase):
         smiles = ['CO)',
                   'C[NH2+]CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12',
                   '(Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1OP(=O)(O)O']
-        corrected_smiles = _correct_number_of_parenthesis(smiles)
+        corrected_smiles = [_correct_number_of_parenthesis(s) for s in smiles]
         self.assertEqual(corrected_smiles[0], 'CO')
         self.assertEqual(corrected_smiles[1], 'C[NH2+]CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12')
         self.assertEqual(corrected_smiles[2],
