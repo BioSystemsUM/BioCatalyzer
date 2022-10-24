@@ -247,7 +247,7 @@ class ChemUtils:
         str
             The most similar compound SMILES string.
         """
-        smiles_list = _correct_number_of_parenthesis(smiles_list)
+        smiles_list = [_correct_number_of_parenthesis(s) for s in smiles_list]
         if len(smiles_list) == 1:
             return smiles_list[0]
         sims = [ChemUtils.calc_fingerprint_similarity(smiles, s) for s in smiles_list]

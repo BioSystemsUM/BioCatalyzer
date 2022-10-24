@@ -1,3 +1,4 @@
+import itertools
 import logging
 import multiprocessing
 import os
@@ -5,11 +6,11 @@ import time
 import uuid
 from typing import Union
 
-import numpy as np
 import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
 
+from biocatalyzer._utils import _empty_dfs, _merge_fields
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 
@@ -483,6 +484,31 @@ class BioReactor:
         else:
             return False
 
+    def _match_conditions(self, smiles: str):
+        """
+        Check if mol matches conditions to remove.
+
+        Parameters
+        ----------
+        smiles: str
+            The smiles to check.
+
+        Returns
+        -------
+        bool
+            True if mol matches conditions to remove, False otherwise.
+        """
+        if self._min_atom_count > 0:
+            if not self._min_atom_count_filter(smiles):
+                return False
+        if len(self._molecules_to_remove) > 0:
+            if self._match_byproducts(smiles):
+                return False
+        if len(self._patterns_to_remove) > 0:
+            if self._match_patterns(smiles):
+                return False
+        return True
+
     def _get_ec_numbers(self, reaction_rule_id: str):
         """
         Get the EC numbers associated with a reaction rule.
@@ -526,25 +552,9 @@ class BioReactor:
         results = results[['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID', 'NewCompoundID',
                            'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers']]
 
-        def merge_fields(value):
-            if len(value.split(';')) == 1:
-                return value
-            values = []
-            for v in value.split(';'):
-                if v not in values:
-                    values.append(v)
-            return ';'.join(values)
-        results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x: merge_fields(x))
-        results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: merge_fields(x))
-
-        def merge_ec_numbers(x):
-            if x == '':
-                return np.NaN
-            x = list(set(x.split(';')))
-            x = [i for i in x if i != '']
-            return ';'.join(x)
-
-        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: merge_ec_numbers(x))
+        results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x: _merge_fields(x))
+        results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: _merge_fields(x))
+        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
         return results
 
     def _react_single(self, smiles: str, smarts: str):
@@ -560,7 +570,8 @@ class BioReactor:
             The SMARTS string of the reaction.
         """
         new_compounds = pd.DataFrame(columns=['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID',
-                                              'NewCompoundID', 'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers'])
+                                              'NewCompoundID', 'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers'],
+                                     dtype=str)
         reactants = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = reactants.replace("Any", smiles).split(';')
         results = ChemUtils.react(reactants, smarts)
@@ -572,9 +583,7 @@ class BioReactor:
                 # keep only the most similar compound to the input compound
                 most_similar_product = ChemUtils.most_similar_compound(smiles, products)
                 if most_similar_product not in new_compounds.NewCompoundSmiles.values:
-                    if not self._match_byproducts(most_similar_product) \
-                            and not self._match_patterns(most_similar_product) \
-                            and self._min_atom_count_filter(most_similar_product):
+                    if self._match_conditions(most_similar_product):
                         if self._neutralize:
                             most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
                         ecs = self._get_ec_numbers(smarts_id)
@@ -588,18 +597,15 @@ class BioReactor:
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
-        results_ = []
-        for compound in self._compounds.smiles:
-            with multiprocessing.Pool(self._n_jobs) as pool:
-                results_.extend(pool.starmap(self._react_single, zip([compound] * self._reaction_rules.shape[0],
-                                                                     self._reaction_rules.SMARTS)))
+        params = list(itertools.product(self._compounds.smiles, self._reaction_rules.SMARTS))
+        with multiprocessing.Pool(self._n_jobs) as pool:
+            results_ = pool.starmap(self._react_single, params)
 
-        not_empty = [not df.empty for df in results_]
-        if not any(not_empty):
+        if _empty_dfs(results_):
             logging.info('No new compounds could be generated using this reaction rules.')
             t1 = time.time()
             logging.info(f"Time elapsed: {t1 - t0} seconds")
-            return False
+            return
         results = pd.concat(results_)
         results = self.process_results(results)
 
@@ -609,7 +615,6 @@ class BioReactor:
         self._new_compounds = results
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
-        return True
 
 
 if __name__ == '__main__':
