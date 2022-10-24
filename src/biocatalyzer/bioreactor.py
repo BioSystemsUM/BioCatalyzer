@@ -10,7 +10,7 @@ import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
 
-from biocatalyzer._utils import _empty_dfs, _merge_fields, _merge_ec_numbers
+from biocatalyzer._utils import _empty_dfs, _merge_fields
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 
@@ -554,7 +554,7 @@ class BioReactor:
 
         results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x: _merge_fields(x))
         results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: _merge_fields(x))
-        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_ec_numbers(x))
+        results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
         return results
 
     def _react_single(self, smiles: str, smarts: str):

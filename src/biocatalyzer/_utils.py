@@ -48,27 +48,6 @@ def _empty_dfs(dfs: List[pd.DataFrame]):
     return True
 
 
-def _merge_ec_numbers(x):
-    """
-    Merge multiple EC numbers.
-
-    Parameters
-    ----------
-    x: str
-        The EC numbers to merge.
-
-    Returns
-    -------
-    str:
-        The merged EC numbers.
-    """
-    if x == '':
-        return np.NaN
-    seen = set()
-    seen_add = seen.add
-    return ';'.join([y for y in x.split(';') if not (y in seen or seen_add(y) or y == '')])
-
-
 def _merge_fields(value):
     """
     Merge multiple fields.
@@ -83,8 +62,13 @@ def _merge_fields(value):
     str:
         The merged fields.
     """
+    if value == '':
+        return np.NaN
     if len(value.split(';')) == 1:
         return value
     seen = set()
     seen_add = seen.add
-    return ';'.join([x for x in value.split(';') if not (x in seen or seen_add(x))])
+    fields = ';'.join([x for x in value.split(';') if not (x in seen or seen_add(x) or x == '')])
+    if fields == '':
+        return np.NaN
+    return fields
