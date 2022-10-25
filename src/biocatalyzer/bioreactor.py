@@ -606,7 +606,7 @@ class BioReactor:
             logging.info('No new compounds could be generated using this reaction rules.')
             t1 = time.time()
             logging.info(f"Time elapsed: {t1 - t0} seconds")
-            return
+            return False
         results = pd.concat(results_)
         results = self.process_results(results)
 
@@ -616,6 +616,7 @@ class BioReactor:
         self._new_compounds = results
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
+        return True
 
 
 if __name__ == '__main__':
