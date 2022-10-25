@@ -528,22 +528,22 @@ class BioReactor:
         """
         return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
 
-    @staticmethod
-    def process_results(results: pd.DataFrame):
+    def process_results(self, save: bool = True):
         """
         Process the results of the reactor.
         Group results by unique SMILES and merges the other columns.
 
         Parameters
         ----------
-        results: pd.DataFrame
-            The results dataframe to process.
+        save: bool
+            If True, save the results to a file.
 
         Returns
         -------
         pd.DataFrame
             The processed results.
         """
+        results = pd.read_csv(self._new_compounds_path, sep='\t', header=0)
         results.EC_Numbers = results.EC_Numbers.fillna('')
         results = results.groupby(['OriginalCompoundID', 'NewCompoundSmiles']).agg({'OriginalCompoundSmiles': 'first',
                                                                                     'OriginalReactionRuleID': ';'.join,
@@ -558,6 +558,9 @@ class BioReactor:
         results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x: _merge_fields(x))
         results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: _merge_fields(x))
         results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
+        if save:
+            results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
+            results.to_csv(results_file_proc, sep='\t', index=False)
         return results
 
     def _react_single(self, smiles: str, smarts: str):
