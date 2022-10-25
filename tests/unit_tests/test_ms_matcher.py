@@ -28,7 +28,7 @@ class TestMSDataMatcher(MSDataMatcherTestCase, TestCase):
         ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
         compounds_to_match = os.path.join(TESTS_DATA_PATH, 'new_compounds_sample/new_compounds.tsv')
         ms = MSDataMatcher(ms_data_path=ms_data_path,
-                           compounds_to_match=compounds_to_match,
+                           compounds_to_match_path=compounds_to_match,
                            output_path=self.output_folder,
                            mode='mass',
                            tolerance=0.0015)
@@ -45,7 +45,7 @@ class TestMSDataMatcher(MSDataMatcherTestCase, TestCase):
         ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
         compounds_to_match = os.path.join(TESTS_DATA_PATH, 'new_compounds_sample/new_compounds.tsv')
         ms = MSDataMatcher(ms_data_path=ms_data_path,
-                           compounds_to_match=compounds_to_match,
+                           compounds_to_match_path=compounds_to_match,
                            output_path=self.output_folder,
                            mode='mass_diff',
                            tolerance=0.0015)
@@ -62,7 +62,7 @@ class TestMSDataMatcher(MSDataMatcherTestCase, TestCase):
         ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
         compounds_to_match = os.path.join(TESTS_DATA_PATH, 'new_compounds_sample/new_compounds.tsv')
         ms = MSDataMatcher(ms_data_path=ms_data_path,
-                           compounds_to_match=compounds_to_match,
+                           compounds_to_match_path=compounds_to_match,
                            output_path=self.output_folder,
                            mode='mass_diff',
                            tolerance=0.0015)
