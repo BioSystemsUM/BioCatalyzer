@@ -59,6 +59,9 @@ class TestBioReactor(BioReactorTestCase, TestCase):
         with self.assertRaises(ValueError):
             _ = br_no_orgs_filter.new_compounds
 
+        r = br_no_orgs_filter.process_results(False)
+        self.assertEqual(r.shape, (380, 7))
+
     def test_bioreactor_all_orgs_keep_all(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
         patterns_to_remove_path = None
