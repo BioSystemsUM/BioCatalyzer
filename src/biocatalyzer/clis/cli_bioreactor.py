@@ -93,7 +93,7 @@ def bioreactor_cli(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
+    logging.basicConfig(filename=f'{output_path}_logging.log', level=logging.DEBUG)
     br.react()
 
 

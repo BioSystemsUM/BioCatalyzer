@@ -11,7 +11,7 @@ from rdkit import RDLogger
 from rdkit.Chem import MolFromSmiles
 from tqdm import tqdm
 
-from biocatalyzer._utils import _empty_dfs, _merge_fields
+from biocatalyzer._utils import _merge_fields
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 
@@ -79,7 +79,9 @@ class BioReactor:
             self._n_jobs = multiprocessing.cpu_count()
         else:
             self._n_jobs = n_jobs
+        self._new_compounds_path = os.path.join(self._output_path, 'new_compounds.tsv')
         self._new_compounds = None
+        self._new_compounds_flag = False
 
     @property
     def compounds(self):
@@ -147,20 +149,20 @@ class BioReactor:
         pd.DataFrame
             The new compounds generated.
         """
-        if isinstance(self._new_compounds, pd.DataFrame):
-            return self._new_compounds
+        if self._new_compounds_flag:
+            return Loaders.load_compounds(self._new_compounds_path, False)
         else:
             raise ValueError('No compounds generated yet. Run the BioReactor react method first.')
 
     @new_compounds.setter
-    def new_compounds(self, new_compounds: pd.DataFrame):
+    def new_compounds(self, new_compounds: str):
         """
         Set the new compounds generated.
 
         Parameters
         ----------
-        new_compounds: pd.DataFrame
-            The new compounds generated.
+        new_compounds: str
+            The path to the file containing the new compounds generated.
         """
         raise AttributeError('New compounds cannot be set manually! You need to run the react method!')
 
@@ -526,22 +528,22 @@ class BioReactor:
         """
         return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
 
-    @staticmethod
-    def process_results(results: pd.DataFrame):
+    def process_results(self, save: bool = True):
         """
         Process the results of the reactor.
         Group results by unique SMILES and merges the other columns.
 
         Parameters
         ----------
-        results: pd.DataFrame
-            The results dataframe to process.
+        save: bool
+            If True, save the results to a file.
 
         Returns
         -------
         pd.DataFrame
             The processed results.
         """
+        results = pd.read_csv(self._new_compounds_path, sep='\t', header=0)
         results.EC_Numbers = results.EC_Numbers.fillna('')
         results = results.groupby(['OriginalCompoundID', 'NewCompoundSmiles']).agg({'OriginalCompoundSmiles': 'first',
                                                                                     'OriginalReactionRuleID': ';'.join,
@@ -556,6 +558,9 @@ class BioReactor:
         results['OriginalReactionRuleID'] = results['OriginalReactionRuleID'].apply(lambda x: _merge_fields(x))
         results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: _merge_fields(x))
         results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
+        if save:
+            results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
+            results.to_csv(results_file_proc, sep='\t', index=False)
         return results
 
     def _react_single(self, smiles: str, smarts: str):
@@ -570,9 +575,6 @@ class BioReactor:
         smarts: str
             The SMARTS string of the reaction.
         """
-        new_compounds = pd.DataFrame(columns=['OriginalCompoundID', 'OriginalCompoundSmiles', 'OriginalReactionRuleID',
-                                              'NewCompoundID', 'NewCompoundSmiles', 'NewReactionSmiles', 'EC_Numbers'],
-                                     dtype=str)
         reactants = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = reactants.replace("Any", smiles).split(';')
         results = ChemUtils.react(reactants, smarts)
@@ -583,40 +585,32 @@ class BioReactor:
                 products = result.split('>')[-1].split('.')
                 # keep only the most similar compound to the input compound
                 most_similar_product = ChemUtils.most_similar_compound(smiles, products)
-                if most_similar_product not in new_compounds.NewCompoundSmiles.values:
-                    if self._match_conditions(most_similar_product):
-                        if self._neutralize:
-                            most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
-                        ecs = self._get_ec_numbers(smarts_id)
-                        new_compounds.loc[len(new_compounds)] = [smiles_id, smiles, smarts_id,
-                                                                 f"{smiles_id}_{uuid.uuid4()}", most_similar_product,
-                                                                 result, ecs]
-        return new_compounds
+                if self._match_conditions(most_similar_product):
+                    if self._neutralize:
+                        most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
+                    ecs = self._get_ec_numbers(smarts_id)
+                    with open(self._new_compounds_path, 'a') as f:
+                        f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
+                                f"{most_similar_product}\t{result}\t{ecs}\n")
+                    self._new_compounds_flag = True
 
     def react(self):
         """
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
+        with open(self._new_compounds_path, 'w') as f:
+            f.write('OriginalCompoundID\tOriginalCompoundSmiles\tOriginalReactionRuleID\tNewCompoundID\t'
+                    'NewCompoundSmiles\tNewReactionSmiles\tEC_Numbers\n')
         params = list(itertools.product(self._compounds.smiles, self._reaction_rules.SMARTS))
         with multiprocessing.Pool(self._n_jobs) as pool:
-            results_ = pool.starmap(self._react_single, tqdm(params, total=len(params)))
-
-        if _empty_dfs(results_):
-            logging.info('No new compounds could be generated using this reaction rules.')
-            t1 = time.time()
-            logging.info(f"Time elapsed: {t1 - t0} seconds")
-            return False
-        results = pd.concat(results_)
-        results = self.process_results(results)
-
-        results.to_csv(self._output_path + '/new_compounds.tsv', sep='\t', index=False)
-        logging.info(f"New compounds saved to {self._output_path}new_compounds.tsv")
-        logging.info(f"{results.shape[0]} unique new compounds generated!")
-        self._new_compounds = results
+            pool.starmap(self._react_single, tqdm(params, total=len(params)))
+        self._new_compounds = f"New products saved to {self._new_compounds_path}"
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
-        return True
+        if self._new_compounds_flag:
+            return True
+        return False
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ class MSDataMatcher:
     def __init__(self,
                  ms_data_path: str,
                  output_path: str,
-                 compounds_to_match: Union[pd.DataFrame, str],
+                 compounds_to_match_path: str,
                  mode: str = 'mass',
                  tolerance: float = 0.02):
         """
@@ -33,8 +33,8 @@ class MSDataMatcher:
             Path to the MS data.
         output_path: str
             Path to the output directory.
-        compounds_to_match: Union[pd.DataFrame, str]
-            The new predicted compounds to match.
+        compounds_to_match_path: str
+            Path to the new predicted compounds to match.
         mode: str
             The mode of the matcher. Either 'mass' or 'mass_diff'.
         tolerance: float
@@ -46,7 +46,7 @@ class MSDataMatcher:
         self._set_output_path(self._output_path)
         self._mode = mode
         self._tolerance = tolerance
-        self._set_up_data_files(compounds_to_match)
+        self._set_up_data_files(compounds_to_match_path)
         self._prepare_mode()
         self._matches = None
 
@@ -232,20 +232,17 @@ class MSDataMatcher:
         else:
             raise ValueError('The mode must be either "mass" or "mass_dif".')
 
-    def _set_up_data_files(self, new_compounds: Union[pd.DataFrame, str]):
+    def _set_up_data_files(self, new_compounds: str):
         """
         Set up the reaction rules and new compounds data files.
 
         Parameters
         ----------
-        new_compounds: Union[pd.DataFrame, str]
-            The new compounds to match.
+        new_compounds: str
+            The path to the new compounds to match.
         """
         self._set_up_reaction_rules()
-        if not isinstance(new_compounds, pd.DataFrame):
-            self._set_up_new_compounds(new_compounds)
-        else:
-            self._new_compounds = new_compounds
+        self._set_up_new_compounds(new_compounds)
 
     def _set_up_reaction_rules(self):
         """
@@ -360,7 +357,7 @@ class MSDataMatcher:
 if __name__ == '__main__':
     output_path_ = 'results/results_example/'
     ms = MSDataMatcher(ms_data_path='data/ms_data_example/ms_data_paper.tsv',
-                       compounds_to_match='results/results_example/new_compounds.tsv',
+                       compounds_to_match_path='results/results_example/new_compounds.tsv',
                        output_path=output_path_,
                        mode='mass',
                        tolerance=0.0015)

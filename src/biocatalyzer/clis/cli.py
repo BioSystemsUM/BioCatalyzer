@@ -122,8 +122,9 @@ def biocatalyzer_cli(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
+    logging.basicConfig(filename=f'{output_path}_logging.log', level=logging.DEBUG)
     brr = br.react()
+    br.process_results()
 
     if match_ms_data:
         if not ms_data_path:
@@ -134,7 +135,7 @@ def biocatalyzer_cli(compounds,
         else:
 
             ms = MSDataMatcher(ms_data_path=ms_data_path,
-                               compounds_to_match=os.path.join(output_path, 'new_compounds.tsv'),
+                               compounds_to_match_path=os.path.join(output_path, 'new_compounds_processed.tsv'),
                                output_path=output_path,
                                mode=mode,
                                tolerance=tolerance)

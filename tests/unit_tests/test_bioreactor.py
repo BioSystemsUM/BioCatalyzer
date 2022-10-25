@@ -39,8 +39,8 @@ class TestBioReactor(BioReactorTestCase, TestCase):
 
         self.assertEqual(br.reaction_rules.shape, (1368, 7))
         self.assertEqual(br.compounds.shape, (4, 2))
-        self.assertIsInstance(br.new_compounds, pd.DataFrame)
-        self.assertEqual(br.new_compounds.shape[1], 7)
+        with self.assertRaises(ValueError):
+            _ = br.new_compounds
 
     def test_bioreactor_all_orgs(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
@@ -56,8 +56,11 @@ class TestBioReactor(BioReactorTestCase, TestCase):
 
         self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (3332, 7))
         self.assertEqual(br_no_orgs_filter.compounds.shape, (4, 2))
-        self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
-        self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
+        with self.assertRaises(ValueError):
+            _ = br_no_orgs_filter.new_compounds
+
+        r = br_no_orgs_filter.process_results(False)
+        self.assertEqual(r.shape, (380, 7))
 
     def test_bioreactor_all_orgs_keep_all(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
@@ -72,8 +75,6 @@ class TestBioReactor(BioReactorTestCase, TestCase):
 
         self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (3332, 7))
         self.assertEqual(br_no_orgs_filter.compounds.shape, (4, 2))
-        self.assertIsInstance(br_no_orgs_filter.new_compounds, pd.DataFrame)
-        self.assertEqual(br_no_orgs_filter.new_compounds.shape[1], 7)
 
     def test_bioreactor_properties_and_setters(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
