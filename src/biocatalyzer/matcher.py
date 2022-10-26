@@ -289,13 +289,13 @@ class MSDataMatcher:
         pd.DataFrame:
             pandas dataframe with the matches.
         """
-        ms_df = pd.DataFrame(columns=['ParentCompound', 'ParentCompoundSmiles', "ParentCompound_ExactMass",
+        ms_df = pd.DataFrame(columns=['Index', 'ParentCompound', 'ParentCompoundSmiles', "ParentCompound_ExactMass",
                                       self._ms_field, 'NewCompoundID', 'NewCompoundSmiles', 'NewCompoundExactMass',
                                       'EC_Numbers'])
         for i, row in self._new_compounds.iterrows():
             mv, mi = match_value(row['NewCompoundExactMass'], self._ms_data[self._ms_field].values, self._tolerance)
             if mv and self._ms_data.loc[mi, 'ParentCompound'] == '_'.join(row['NewCompoundID'].split('_')[:-1]):
-                ms_df.loc[len(ms_df)] = [self._ms_data.loc[mi, 'ParentCompound'],
+                ms_df.loc[len(ms_df)] = [mi, self._ms_data.loc[mi, 'ParentCompound'],
                                          self._ms_data.loc[mi, 'ParentCompoundSmiles'],
                                          ChemUtils.calc_exact_mass(self._ms_data.loc[mi, 'ParentCompoundSmiles']),
                                          self._ms_data.loc[mi, self._ms_field],
@@ -314,13 +314,13 @@ class MSDataMatcher:
         pd.DataFrame:
             pandas dataframe with the matches.
         """
-        ms_df = pd.DataFrame(columns=['ParentCompound', 'ParentCompoundSmiles', "ParentCompound_ExactMass",
+        ms_df = pd.DataFrame(columns=['Index', 'ParentCompound', 'ParentCompoundSmiles', "ParentCompound_ExactMass",
                                       self._ms_field, 'NewCompoundID', 'NewCompoundSmiles', 'NewCompoundExactMass',
                                       'NewCompoundExactMassDiff', 'EC_Numbers'])
         for i, row in self._new_compounds.iterrows():
             mv, mi = match_value(row['NewCompoundExactMassDiff'], self._ms_data[self._ms_field].values, self._tolerance)
             if mv and self._ms_data.loc[mi, 'ParentCompound'] == row['NewCompoundID'].split('_')[0]:
-                ms_df.loc[len(ms_df)] = [self._ms_data.loc[mi, 'ParentCompound'],
+                ms_df.loc[len(ms_df)] = [mi, self._ms_data.loc[mi, 'ParentCompound'],
                                          self._ms_data.loc[mi, 'ParentCompoundSmiles'],
                                          ChemUtils.calc_exact_mass(self._ms_data.loc[mi, 'ParentCompoundSmiles']),
                                          self._ms_data.loc[mi, self._ms_field],
