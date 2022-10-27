@@ -7,8 +7,6 @@ import uuid
 from typing import Union
 
 import pandas as pd
-from rdkit import RDLogger
-from rdkit.Chem import MolFromSmiles
 from tqdm import tqdm
 
 from biocatalyzer._utils import _merge_fields
@@ -59,7 +57,7 @@ class BioReactor:
             The number of jobs to run in parallel.
         """
         # silence RDKit logger
-        RDLogger.DisableLog('rdApp.*')
+        ChemUtils.rdkit_logs(False)
         self._compounds_path = compounds_path
         self._output_path = output_path
         self._neutralize = neutralize_compounds
@@ -436,7 +434,7 @@ class BioReactor:
         """
         if len(self._patterns_to_remove) == 0:
             return False
-        mol = MolFromSmiles(smiles)
+        mol = ChemUtils.smiles_to_mol(smiles)
         if not mol:
             return True
         for bp in self._patterns_to_remove:
@@ -458,7 +456,7 @@ class BioReactor:
         bool
             True if mol has at least the minimum number of atoms, False otherwise.
         """
-        mol = MolFromSmiles(smiles)
+        mol = ChemUtils.smiles_to_mol(smiles)
         if not mol:
             return False
         if mol.GetNumHeavyAtoms() >= self._min_atom_count:
