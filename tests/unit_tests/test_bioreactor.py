@@ -2,8 +2,6 @@ import os
 import shutil
 from unittest import TestCase
 
-import pandas as pd
-
 from biocatalyzer.bioreactor import BioReactor
 
 from tests import TESTS_DATA_PATH
@@ -60,7 +58,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
             _ = br_no_orgs_filter.new_compounds
 
         r = br_no_orgs_filter.process_results(False)
-        self.assertEqual(r.shape, (380, 7))
+        self.assertEqual(r.shape, (352, 7))
 
     def test_bioreactor_all_orgs_keep_all(self):
         compounds_path = os.path.join(TESTS_DATA_PATH, 'compounds_sample/compounds.tsv')
@@ -150,4 +148,3 @@ class TestBioReactor(BioReactorTestCase, TestCase):
         _ = br.n_jobs
         br.n_jobs = -1
         br.n_jobs = 6
-

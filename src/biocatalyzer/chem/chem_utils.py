@@ -101,6 +101,29 @@ class ChemUtils:
             return mol
 
     @staticmethod
+    def _sanitize_mol(mol: Mol):
+        """
+        Sanitizes a molecule.
+
+        Parameters
+        ----------
+        mol: Mol
+            The molecule to sanitize.
+
+        Returns
+        -------
+        Mol
+            The sanitized molecule.
+        """
+        if mol is None:
+            return None
+        try:
+            Chem.SanitizeMol(mol)
+            return mol
+        except ValueError:
+            return None
+
+    @staticmethod
     def react(smiles: Union[str, List[str]], smarts: str):
         """
         Reacts a molecule with a reaction.
@@ -127,7 +150,7 @@ class ChemUtils:
         try:
             return ChemUtils._create_reaction_instances(reaction, mol)
         except ValueError:
-            return None
+            return []
 
     @staticmethod
     def _create_reaction_instances(rxn: ChemicalReaction, reactants: List[Mol]):
@@ -148,13 +171,16 @@ class ChemUtils:
         """
         res = []
         ps = rxn.RunReactants(reactants)
+
         for pset in ps:
-            tres = ChemicalReaction()
-            for p in pset:
-                tres.AddProductTemplate(ChemUtils._remove_hs(p))
-            for reactant in reactants:
-                tres.AddReactantTemplate(ChemUtils._remove_hs(reactant))
-            res.append(tres)
+            pset = [ChemUtils._sanitize_mol(pset_i) for pset_i in pset]
+            if None not in pset:
+                tres = ChemicalReaction()
+                for p in pset:
+                    tres.AddProductTemplate(ChemUtils._remove_hs(p))
+                for reactant in reactants:
+                    tres.AddReactantTemplate(ChemUtils._remove_hs(reactant))
+                res.append(tres)
         return list(set([AllChem.ReactionToSmiles(entry, canonical=True) for entry in res]))
 
     @staticmethod

@@ -83,7 +83,7 @@ class TestChemUtils(TestCase):
             '[#6:1]-[#6H1:2]=[O:3].[#8:4]-[#8:5]>>[#6:1]-[#6:2](-[#8:5])=[O:3].[#8:4]']
 
         for s in smarts:
-            self.assertIsNone(ChemUtils.react(smiles, s))
+            self.assertEqual(len(ChemUtils.react(smiles, s)), 0)
 
         known_reactant = 'Nc1nc(NC2CC2)c2ncn(C3C=CC(CO)C3)c2n1'
         coreactant = 'O=C1C=CC=CC1=O'
@@ -93,7 +93,7 @@ class TestChemUtils(TestCase):
         self.assertEqual(known_reactant, reaction_smiles[0].split('.')[0])
         self.assertEqual(coreactant, reaction_smiles[0].split('.')[1].split('>>')[0])
 
-        self.assertIsNone(ChemUtils.react(smiles[0], smarts[0]))
+        self.assertEqual(len(ChemUtils.react(smiles[0], smarts[0])), 0)
 
         invalid_smiles = 'CN1C=NC2=C1C(=O)N(C(=O)N2C)C('
         self.assertEqual(len(ChemUtils.react(invalid_smiles, smarts[1])), 0)
@@ -104,7 +104,7 @@ class TestChemUtils(TestCase):
         reactants_smiles = 'C[NH+](C)CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12;O;*C1=C(*)C(=O)C(*)=C(*)C1=O'
         reactants = [MolFromSmiles(s) for s in reactants_smiles.split(';')]
         reaction_instances = ChemUtils._create_reaction_instances(rxn, reactants)
-        self.assertEqual(3, len(reaction_instances))
+        self.assertEqual(2, len(reaction_instances))
         for instance in reaction_instances:
             self.assertEqual(3, len(instance.split('>')))
             for reac in reactants_smiles.split(';'):
