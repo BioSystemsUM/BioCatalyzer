@@ -1,8 +1,8 @@
 from unittest import TestCase
 
 from rdkit import RDLogger
-from rdkit.Chem import MolFromSmiles, MolToInchi
-from rdkit.Chem.rdChemReactions import ChemicalReaction
+from rdkit.Chem import MolFromSmiles, MolToInchi, Mol
+from rdkit.Chem.rdChemReactions import ChemicalReaction, ReactionFromSmarts
 
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.chem._utils import _correct_number_of_parenthesis
@@ -12,22 +12,22 @@ class TestChemUtils(TestCase):
     # mute rdkit logs
     RDLogger.DisableLog('rdApp.*')
 
-    def test_mol_to_isomerical_smiles(self):
+    def test_smiles_to_isomerical_smiles(self):
         smiles = ['CN1C=NC2=C1C(=O)N(C(=O)N2C)C',
                   'C(C1C(C(C(C(O1)O)O)O)O)O',
                   'CC(=O)OC1=CC=CC=C1C(=O)O']
-        mols = [MolFromSmiles(s) for s in smiles]
         invalid_smiles = 'C(C1C(C(C(C(O1)O)O)O)O)O('
-        invalid_mol = MolFromSmiles(invalid_smiles)
 
-        def same_compound(mol1, mol2):
+        def same_compound(smiles1, smiles2):
+            mol1 = MolFromSmiles(smiles1)
+            mol2 = MolFromSmiles(smiles2)
             return MolToInchi(mol1) == MolToInchi(mol2)
 
-        for i, m in enumerate(mols):
-            self.assertNotEqual(ChemUtils.mol_to_isomerical_smiles(m), smiles[i])
-            self.assertTrue(same_compound(m, MolFromSmiles(ChemUtils.mol_to_isomerical_smiles(m))))
+        for i, m in enumerate(smiles):
+            self.assertNotEqual(ChemUtils.smiles_to_isomerical_smiles(m), smiles[i])
+            self.assertTrue(same_compound(m, ChemUtils.smiles_to_isomerical_smiles(m)))
 
-        self.assertIsNone(ChemUtils.mol_to_isomerical_smiles(invalid_mol))
+        self.assertIsNone(ChemUtils.smiles_to_isomerical_smiles(invalid_smiles))
 
     def test_validate_smiles(self):
         smiles = ['CN1C=NC2=C1C(=O)N(C(=O)N2C)C',
@@ -72,6 +72,14 @@ class TestChemUtils(TestCase):
 
         atom_valence_exception_mol = MolFromSmiles('CN(C)(C)C', sanitize=False)
         self.assertEqual(ChemUtils._remove_hs(atom_valence_exception_mol), atom_valence_exception_mol)
+
+    def test_sanitized_mol(self):
+        t_butanol = MolFromSmiles('C(C)(C)(C)O')
+        self.assertIsInstance(ChemUtils._sanitize_mol(t_butanol), Mol)
+
+        rxn_1 = ReactionFromSmarts('[#6:1][O:2]>>[#6:1]=[O:2]')
+        invalid_product = rxn_1.RunReactants((t_butanol, ))[0][0]
+        self.assertIsNone(ChemUtils._sanitize_mol(invalid_product))
 
     def test_react(self):
         smiles = ['CN1C=NC2=C1C(=O)N(C(=O)N2C)C',
