@@ -539,8 +539,8 @@ class BioReactor:
 
         Returns
         -------
-        pd.DataFrame
-            The processed results.
+        Tuple[pd.DataFrame, str]
+            The processed results and the path to the results file.
         """
         results = pd.read_csv(self._new_compounds_path, sep='\t', header=0)
         results.EC_Numbers = results.EC_Numbers.fillna('')
@@ -564,7 +564,9 @@ class BioReactor:
             else:
                 results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
                 results.to_csv(results_file_proc, sep='\t', index=False)
-        return results
+        else:
+            results_file_proc = self._new_compounds_path
+        return results, results_file_proc
 
     def _react_single(self, smiles: str, smarts: str):
         """
