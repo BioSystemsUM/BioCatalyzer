@@ -79,7 +79,6 @@ class BioReactor:
             self._n_jobs = n_jobs
         self._new_compounds_path = os.path.join(self._output_path, 'new_compounds.tsv')
         self._new_compounds = None
-        self._new_compounds_flag = False
 
     @property
     def compounds(self):
@@ -147,7 +146,7 @@ class BioReactor:
         pd.DataFrame
             The new compounds generated.
         """
-        if self._new_compounds_flag:
+        if self._new_compounds is not None:
             return Loaders.load_compounds(self._new_compounds_path, False)
         else:
             raise ValueError('No compounds generated yet. Run the BioReactor react method first.')
@@ -594,7 +593,6 @@ class BioReactor:
                         with open(self._new_compounds_path, 'a') as f:
                             f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
                                     f"{most_similar_product}\t{result}\t{ecs}\n")
-                        self._new_compounds_flag = True
 
     def react(self):
         """
@@ -610,9 +608,6 @@ class BioReactor:
         self._new_compounds = f"New products saved to {self._new_compounds_path}"
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
-        if self._new_compounds_flag:
-            return True
-        return False
 
 
 if __name__ == '__main__':
