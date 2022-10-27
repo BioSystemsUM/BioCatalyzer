@@ -40,13 +40,16 @@ class MSDataMatcher:
         tolerance: float
             The tolerance for the mass matching.
         """
+        self._set_up_data_files(compounds_to_match_path)
+        if isinstance(self._new_compounds, pd.DataFrame):
+            if self._new_compounds.shape[0] == 0:
+                raise ValueError('The new compounds file is empty!')
         self._ms_data_path = ms_data_path
         self._ms_data = Loaders.load_ms_data(self._ms_data_path, mode)
         self._output_path = output_path
         self._set_output_path(self._output_path)
         self._mode = mode
         self._tolerance = tolerance
-        self._set_up_data_files(compounds_to_match_path)
         self._prepare_mode()
         self._matches = None
 

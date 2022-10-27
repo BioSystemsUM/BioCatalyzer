@@ -122,20 +122,17 @@ def biocatalyzer_cli(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
-    logging.basicConfig(filename=f'{output_path}_logging.log', level=logging.DEBUG)
-    brr = br.react()
-    br.process_results()
+    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
+    br.react()
+    _, new_results_path = br.process_results()
 
     if match_ms_data:
         if not ms_data_path:
             raise ValueError("The path to the MS data file is required when matching MS data.")
 
-        if not brr:
-            logging.info("No products were generated. No MS data matching will be performed.")
         else:
-
             ms = MSDataMatcher(ms_data_path=ms_data_path,
-                               compounds_to_match_path=os.path.join(output_path, 'new_compounds_processed.tsv'),
+                               compounds_to_match_path=new_results_path,
                                output_path=output_path,
                                mode=mode,
                                tolerance=tolerance)
