@@ -525,7 +525,7 @@ class BioReactor:
         """
         return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
 
-    def process_results(self, save: bool = True):
+    def process_results(self, save: bool = True, overwrite: bool = True):
         """
         Process the results of the reactor.
         Group results by unique SMILES and merges the other columns.
@@ -534,6 +534,8 @@ class BioReactor:
         ----------
         save: bool
             If True, save the results to a file.
+        overwrite: bool
+            If True, overwrite the results file if it already exists.
 
         Returns
         -------
@@ -556,8 +558,12 @@ class BioReactor:
         results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: _merge_fields(x))
         results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
         if save:
-            results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
-            results.to_csv(results_file_proc, sep='\t', index=False)
+            if overwrite:
+                results_file_proc = os.path.join(self._output_path, 'new_compounds.tsv')
+                results.to_csv(results_file_proc, sep='\t', index=False)
+            else:
+                results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
+                results.to_csv(results_file_proc, sep='\t', index=False)
         return results
 
     def _react_single(self, smiles: str, smarts: str):
