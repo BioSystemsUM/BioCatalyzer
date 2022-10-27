@@ -39,7 +39,7 @@ class TestMSDataMatcher(MSDataMatcherTestCase, TestCase):
         self.assertEqual(ms.tolerance, 0.0015)
         self.assertEqual(ms.compounds_to_match.shape, (266, 8))
         self.assertIsInstance(ms.matches, pd.DataFrame)
-        self.assertEqual(ms.matches.shape, (0, 8))
+        self.assertEqual(ms.matches.shape, (0, 9))
 
     def test_ms_data_matcher_massdiff_mode(self):
         ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
@@ -56,7 +56,7 @@ class TestMSDataMatcher(MSDataMatcherTestCase, TestCase):
         self.assertEqual(ms.tolerance, 0.0015)
         self.assertEqual(ms.compounds_to_match.shape, (266, 9))
         self.assertIsInstance(ms.matches, pd.DataFrame)
-        self.assertEqual(ms.matches.shape, (0, 9))
+        self.assertEqual(ms.matches.shape, (0, 10))
 
     def test_ms_data_matcher_properties_and_setters(self):
         ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')

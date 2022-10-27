@@ -581,18 +581,22 @@ class BioReactor:
         if len(results) > 0:
             smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
             smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
+            most_similar_products_set = set()
             for i, result in enumerate(results):
                 products = result.split('>')[-1].split('.')
                 # keep only the most similar compound to the input compound
                 most_similar_product = ChemUtils.most_similar_compound(smiles, products)
-                if self._match_conditions(most_similar_product):
-                    if self._neutralize:
-                        most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
-                    ecs = self._get_ec_numbers(smarts_id)
-                    with open(self._new_compounds_path, 'a') as f:
-                        f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
-                                f"{most_similar_product}\t{result}\t{ecs}\n")
-                    self._new_compounds_flag = True
+                most_similar_product = ChemUtils.smiles_to_isomerical_smiles(most_similar_product)
+                if most_similar_product not in most_similar_products_set:
+                    most_similar_products_set.add(most_similar_product)
+                    if self._match_conditions(most_similar_product):
+                        if self._neutralize:
+                            most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
+                        ecs = self._get_ec_numbers(smarts_id)
+                        with open(self._new_compounds_path, 'a') as f:
+                            f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
+                                    f"{most_similar_product}\t{result}\t{ecs}\n")
+                        self._new_compounds_flag = True
 
     def react(self):
         """
