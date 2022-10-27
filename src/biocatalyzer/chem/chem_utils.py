@@ -15,14 +15,14 @@ class ChemUtils:
     """
 
     @staticmethod
-    def mol_to_isomerical_smiles(mol: Mol):
+    def smiles_to_isomerical_smiles(smiles: str):
         """
         Converts a molecule to its canonical SMILES.
 
         Parameters
         ----------
-        mol: Mol
-            The molecule to convert.
+        smiles: str
+            The SMILES of the molecule.
 
         Returns
         -------
@@ -30,7 +30,7 @@ class ChemUtils:
             The SMILES string.
         """
         try:
-            return MolToSmiles(RemoveHs(mol), isomericSmiles=True)
+            return MolToSmiles(RemoveHs(MolFromSmiles(smiles)), isomericSmiles=True)
         except TypeError:
             return None
 
@@ -171,7 +171,6 @@ class ChemUtils:
         """
         res = []
         ps = rxn.RunReactants(reactants)
-
         for pset in ps:
             pset = [ChemUtils._sanitize_mol(pset_i) for pset_i in pset]
             if None not in pset:
