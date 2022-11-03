@@ -9,8 +9,10 @@ from biocatalyzer._utils import match_value, _empty_dfs, _merge_fields
 class TestUtils(TestCase):
 
     def test_match_value(self):
-        self.assertTrue(match_value(10, [10.1, 10.2], 0.1)[0])
-        self.assertFalse(match_value(10, [10.1, 10.2], 0.01)[0])
+        self.assertEqual(len(match_value(10, [10.1, 10.2], 0.1)), 1)
+        self.assertEqual(len(match_value(10.1, [10, 10.2], 0.1)), 2)
+        self.assertEqual(len(match_value(10, [10.1, 10.2], 0.01)), 0)
+        self.assertEqual(len(match_value(10, [10.1, 10.3], 0.1)), 1)
 
     def test_empty_dfs(self):
         dfs = [pd.DataFrame(), pd.DataFrame()]

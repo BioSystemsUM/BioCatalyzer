@@ -22,7 +22,6 @@ class BioCatalyzerCLITestCase(TestCase):
         self.n_jobs = -1
         self.ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
         self.match_ms_data = True
-        self.mode = 'mass'
         self.tolerance = 0.02
 
     def tearDown(self):
@@ -55,7 +54,7 @@ class TestBioCatalyzerCLI(BioCatalyzerCLITestCase, TestCase):
                                 f"--patterns_to_remove={self.patterns_to_remove_path} "
                                 f"--molecules_to_remove={self.molecules_to_remove_path} "
                                 f"--min_atom_count={self.min_atom_count} --match_ms_data={self.match_ms_data} "
-                                f"--ms_data_path={self.ms_data_path} --mode={self.mode} --tolerance={self.tolerance} "
+                                f"--ms_data_path={self.ms_data_path} --tolerance={self.tolerance} "
                                 f"--n_jobs={self.n_jobs}")
         self.assertEqual(exit_status, 0)
 
@@ -65,6 +64,6 @@ class TestBioCatalyzerCLI(BioCatalyzerCLITestCase, TestCase):
                                 f"--patterns_to_remove={None} "
                                 f"--molecules_to_remove={None} "
                                 f"--min_atom_count={self.min_atom_count} --match_ms_data={self.match_ms_data} "
-                                f"--ms_data_path={self.ms_data_path} --mode={self.mode} --tolerance={self.tolerance} "
+                                f"--ms_data_path={self.ms_data_path} --tolerance={self.tolerance} "
                                 f"--n_jobs={self.n_jobs}")
         self.assertEqual(exit_status, 0)
