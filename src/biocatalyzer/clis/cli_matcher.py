@@ -18,14 +18,6 @@ from biocatalyzer import MSDataMatcher
                 type=click.Path(),
                 required=True,
                 )
-@click.option("--mode",
-              "mode",
-              type=click.Choice(['mass', 'mass_diff']),
-              default='mass',
-              show_default=True,
-              help="The mode to use for the MS data matching (mass for ExactMass matching or mass_dif for ExactMass "
-                   "differences matching).",
-              )
 @click.option("--tolerance",
               "tolerance",
               type=float,
@@ -36,7 +28,6 @@ from biocatalyzer import MSDataMatcher
 def matcher_cli(ms_data,
                 compounds_to_match,
                 output_path,
-                mode,
                 tolerance):
     """Run the MSDataMatcher.
 
@@ -51,7 +42,6 @@ def matcher_cli(ms_data,
     ms = MSDataMatcher(ms_data_path=ms_data,
                        compounds_to_match_path=compounds_to_match,
                        output_path=output_path,
-                       mode=mode,
                        tolerance=tolerance)
     logging.basicConfig(filename=f'{output_path}_logging.log', level=logging.DEBUG)
     ms.generate_ms_results()

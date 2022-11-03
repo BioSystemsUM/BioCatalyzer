@@ -68,13 +68,6 @@ DATA_FILES = os.path.dirname(__file__)
               default=None,
               show_default=True,
               help="The path to the file containing the MS data to use.")
-@click.option("--mode",
-              "mode",
-              type=click.Choice(['mass', 'mass_diff']),
-              default='mass',
-              show_default=True,
-              help="The mode to use for the MS data matching (mass for ExactMass matching or mass_dif for ExactMass "
-                   "differences matching).")
 @click.option("--tolerance",
               "tolerance",
               type=float,
@@ -99,7 +92,6 @@ def biocatalyzer_cli(compounds,
                      min_atom_count,
                      match_ms_data,
                      ms_data_path,
-                     mode,
                      tolerance,
                      n_jobs):
     """Run the BioCatalyzer and the MSDataMatcher (optional).
@@ -134,7 +126,6 @@ def biocatalyzer_cli(compounds,
             ms = MSDataMatcher(ms_data_path=ms_data_path,
                                compounds_to_match_path=new_results_path,
                                output_path=output_path,
-                               mode=mode,
                                tolerance=tolerance)
 
             ms.generate_ms_results()

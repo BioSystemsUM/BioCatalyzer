@@ -22,7 +22,7 @@ Installing from GitHub:
 ## Command Line Interface
 
 ```bash
-biocatalyzer_cli <PATH_TO_COMPOUNDS> <OUTPUT_DIRECTORY> [--neutralize=<BOOL>] [--reaction_rules=<FILE_PATH>] [--organisms=<FILE_PATH>] [--patterns_to_remove=<FILE_PATH>] [--molecules_to_remove=<FILE_PATH>] [--min_atom_count=<INT>] [--match_ms_data=<BOOL>] [--ms_data_path=<FILE_PATH>] [--mode=<STR>] [--tolerance=<FLOAT>] [--n_jobs=<INT>]
+biocatalyzer_cli <PATH_TO_COMPOUNDS> <OUTPUT_DIRECTORY> [--neutralize=<BOOL>] [--reaction_rules=<FILE_PATH>] [--organisms=<FILE_PATH>] [--patterns_to_remove=<FILE_PATH>] [--molecules_to_remove=<FILE_PATH>] [--min_atom_count=<INT>] [--match_ms_data=<BOOL>] [--ms_data_path=<FILE_PATH>] [--tolerance=<FLOAT>] [--n_jobs=<INT>]
 ```
 
 | Argument                             | Example                                                 | Description                                                                                                                                                                                                                           | Default                                                                                                                                                      |
@@ -37,7 +37,6 @@ biocatalyzer_cli <PATH_TO_COMPOUNDS> <OUTPUT_DIRECTORY> [--neutralize=<BOOL>] [-
 | min_atom_count                       | `4`                                                     | The minimum number of heavy atoms a product must have.                                                                                                                                                                                | `5`                                                                                                                                                          |
 | match_ms_data                        | `True` or `False`                                       | Whether to match the predicted products to the MS data.                                                                                                                                                                               | `False`                                                                                                                                                      |
 | ms_data_path                         | `ms_data.tsv`                                           | The path to the file containing the MS data. <sup>6</sup>                                                                                                                                                                             | `None`                                                                                                                                                       |
-| mode                                 | `mass` or `mass_diff`                                   | The mode to use when matching the predicted products to the MS data.                                                                                                                                                                  | `mass`                                                                                                                                                       |
 | tolerance                            | `0.02`                                                  | The mass tolerance to use when matching masses.                                                                                                                                                                                       | `0.02`                                                                                                                                                       |
 | n_jobs                               | `6`                                                     | The number of jobs to run in parallel (-1 uses all).                                                                                                                                                                                  | `1`                                                                                                                                                          |
 
@@ -131,17 +130,7 @@ See [ms_data.tsv](src/biocatalyzer/data/ms_data_example/ms_data_paper.tsv)<sup>6
 The file must be tab-separated and contain the following columns:
 - `ParentCompound` - the parent/original compound identifiers.
 - `ParentCompoundSmiles` - the SMILES representation of the compounds (optional).
-- `Mass` or `MassDiff` - depending on the selected `mode`, the mass or mass difference of the molecule.
-
-### Mode
-
-The mode to use when matching the predicted products to the MS data.
-
-If set to `mass`, the `Mass` column will be used. This will match the predicted products exact mass to the MS 
-data provided in the `Mass` column.
-
-If set to `mass_diff`, the `MassDiff` column will be used. This will match the predicted products mass difference to 
-the ParentDrug as provided in the MS data `MassDiff` column.
+- `Mass` - the mass of the molecule.
 
 ### Mass Tolerance
 
@@ -154,7 +143,7 @@ The number of jobs to run in parallel. If `-1` is passed, all available cores wi
 ### Usage example
 
 ```bash
-biocatalyzer_cli file.tsv output_dir/ --neutralize=True --reaction_rules=reaction_rules.tsv --organisms="hsa;eco;sce" --patterns_to_remove=patterns.tsv --molecules_to_remove=byproducts.tsv --match_ms_data=True --ms_data_path=ms_data.tsv --mode=mass --mass_tolerance=0.1 --n_jobs=-1
+biocatalyzer_cli file.tsv output_dir/ --neutralize=True --reaction_rules=reaction_rules.tsv --organisms="hsa;eco;sce" --patterns_to_remove=patterns.tsv --molecules_to_remove=byproducts.tsv --match_ms_data=True --ms_data_path=ms_data.tsv --mass_tolerance=0.1 --n_jobs=-1
 ```
 
 For predicting compound metabolism only:

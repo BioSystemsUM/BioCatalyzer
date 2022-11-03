@@ -1,1 +1,5 @@
-Index	ParentCompound	ParentCompoundSmiles	ParentCompound_ExactMass	MassDiff	NewCompoundID	NewCompoundSmiles	NewCompoundExactMass	NewCompoundExactMassDiff	EC_Numbers
+Index	OriginalCompoundID	OriginalCompoundSmiles	ParentCompoundExactMass	NewCompoundID	NewCompoundSmiles	NewCompoundExactMass	MassDiff	EC_Numbers
+33	ACEBUTOLOL	CCCC(Nc1ccc(c(c1)C(C)=O)OCC(C[N+]C(C)C)O)=O	335.1965	ACEBUTOLOL_c7ea3c8e-813e-4b83-8f5e-a951020fa070	CCCC#[N+]c1ccc(OCC(O)C[N+]C(C)C)c(C(C)=O)c1	318.1932	17.003300000000024	4.2.1.84;4.2.1.103
+88	ALMOTRIPTAN	C[NH+](C)CCc1c[nH]c2ccc(CS(=O)(=O)N3CCCC3)cc12	336.174	ALMOTRIPTAN_2	C[NH+](C)CCc1c[nH]c2ccc(CS(=O)(=O)[N+]3=CCCC3)cc12	335.1657	1.008299999999963	1.5.1.27;1.5.1.15
+33	ACEBUTOLOL	CCCC(Nc1ccc(c(c1)C(C)=O)OCC(C[N+]C(C)C)O)=O	335.1965	ACEBUTOLOL_05a25e0b-e1ff-4c76-8226-a00507604d81	CCCC(=O)Nc1ccc(OCCC=[N+]C(C)C)c(C(C)=O)c1	318.1938	17.002700000000004	4.2.1.171;4.2.1.172;4.2.1.77
+44	ACECAINIDE	CC[N+](CC)CCNC(c1ccc(cc1)NC(C)=O)=O	277.1785	ACECAINIDE_f869994c-25df-4b00-a32a-2f797834cf2b	C=C(O)Nc1ccc(C(=O)NCC[N+](CC)CC)cc1	277.1785	0.0	

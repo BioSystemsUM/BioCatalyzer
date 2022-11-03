@@ -75,13 +75,13 @@ class LoadersTestCase(TestCase):
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         self.assertRaises(FileNotFoundError, Loaders.load_ms_data, 'random_path.tsv')
         self.assertRaises(ValueError, Loaders.load_ms_data, reaction_rules_path)
-        self.assertEqual(Loaders.load_ms_data(ms_data_path).shape, (23, 20))
+        self.assertEqual(Loaders.load_ms_data(ms_data_path).shape, (438, 20))
 
     def test_load_new_compounds(self):
         new_compounds_path = os.path.join(TESTS_DATA_PATH, 'new_compounds_sample/new_compounds.tsv')
         reaction_rules_path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         self.assertRaises(FileNotFoundError, Loaders.load_new_compounds, 'random_path.tsv')
         self.assertRaises(ValueError, Loaders.load_new_compounds, reaction_rules_path)
-        self.assertEqual(Loaders.load_new_compounds(new_compounds_path).shape, (266, 7))
+        self.assertEqual(Loaders.load_new_compounds(new_compounds_path).shape, (269, 7))
 
 

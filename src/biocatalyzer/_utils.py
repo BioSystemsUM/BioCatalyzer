@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 
-def match_value(v: float, values: List[float], tol: float = 0.1) -> tuple:
+def match_value(v: float, values: List[float], tol: float = 0.1):
     """
     Match a value with a list of values.
 
@@ -21,12 +21,13 @@ def match_value(v: float, values: List[float], tol: float = 0.1) -> tuple:
     Returns
     -------
     tuple:
-        The matched value and the index of the matched value.
+        The indexes of the matched values.
     """
+    indexes = []
     for i, value in enumerate(values):
         if value - tol <= v <= value + tol:
-            return True, i
-    return False, None
+            indexes.append(i)
+    return indexes
 
 
 def _empty_dfs(dfs: List[pd.DataFrame]):
