@@ -104,7 +104,7 @@ def biocatalyzer_cli(compounds,
     """
     if reaction_rules is None:
         reaction_rules = os.path.join(
-            DATA_FILES, '../data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
+            DATA_FILES, '../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
                     reaction_rules_path=reaction_rules,
