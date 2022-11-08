@@ -70,18 +70,14 @@ The file must be tab-separated and contain the following columns:
 
 - `InternalID` - The ID of the Reaction Rule. # TODO: change the name of this column
 - `Reactants` - The Reactants of the ReactionRule. Coreactants must be defined by their ID as in the Coreactants file.
-The compound to match must be identifyed by the string 'Any'. The format must be: `coreactant1_id;Any;coreactant_id`.
+The compound to match must be identified by the string 'Any'. The format must be: `coreactant1_id;Any;coreactant_id`.
 The order in which the reactants and the compound to match are defined is relevant and specific to the Reaction Rule.
 If the Reaction Rules are mono-component (i.e. they do not contain any additional coreactant) the format must be: `Any`.
 - `SMARTS` - The SMARTS representation of the Reaction Rule.
 - `EC_Numbers` - The EC Numbers associated with the Reaction Rule.
 - `Organisms` - The Organisms associated with the Reaction Rule.
 
-To use our complete set of Reaction Rules please download the following 
-[file](https://drive.google.com/file/d/1t2uYkKA8MjkIokSKNDESU27an1wW3CRK/view?usp=sharing) and provide its path in the
-`--reaction_rules` argument.
-
-You can directly use this file by providing the path to it as the value of the `reaction_rules` parameter.
+By default our set of reaction rules is used.
 
 ### Organisms
 

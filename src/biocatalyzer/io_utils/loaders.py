@@ -65,7 +65,10 @@ class Loaders:
         """
         if not Loaders._verify_file(path):
             raise FileNotFoundError(f"File {path} not found.")
-        rules = pd.read_csv(path, header=0, sep='\t')
+        if path.endswith('.bz2'):
+            rules = pd.read_csv(path, header=0, sep='\t', compression='bz2')
+        else:
+            rules = pd.read_csv(path, header=0, sep='\t')
         if 'InternalID' not in rules.columns:
             raise ValueError('The reaction rules file must contain a column named "InternalID".')
         if 'Reactants' not in rules.columns:

@@ -394,7 +394,7 @@ class BioReactor:
     def _set_up_files(self):
         if self._reaction_rules_path == 'default':
             self._reaction_rules_path = os.path.join(
-                DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
+                DATA_FILES, 'data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
         if self._molecules_to_remove_path == 'default':
             self._molecules_to_remove_path = os.path.join(DATA_FILES, 'data/byproducts_to_remove/byproducts.tsv')
         if self._patterns_to_remove_path == 'default':
