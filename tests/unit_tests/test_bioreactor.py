@@ -35,7 +35,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                         n_jobs=12)
         br.react()
 
-        self.assertEqual(br.reaction_rules.shape, (7108, 7))
+        self.assertEqual(br.reaction_rules.shape, (7102, 7))
         self.assertEqual(br.compounds.shape, (4, 2))
         with self.assertRaises(ValueError):
             _ = br.new_compounds
@@ -52,7 +52,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                                        n_jobs=12)
         br_no_orgs_filter.react()
 
-        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (22958, 7))
+        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (22949, 7))
         self.assertEqual(br_no_orgs_filter.compounds.shape, (4, 2))
         with self.assertRaises(ValueError):
             _ = br_no_orgs_filter.new_compounds
@@ -71,7 +71,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
                                        n_jobs=-1)
         br_no_orgs_filter.react()
 
-        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (22958, 7))
+        self.assertEqual(br_no_orgs_filter.reaction_rules.shape, (22949, 7))
         self.assertEqual(br_no_orgs_filter.compounds.shape, (4, 2))
 
     def test_bioreactor_properties_and_setters(self):
