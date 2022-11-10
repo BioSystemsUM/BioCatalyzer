@@ -126,7 +126,8 @@ def biocatalyzer_cli(compounds,
             ms = MSDataMatcher(ms_data_path=ms_data_path,
                                compounds_to_match_path=new_results_path,
                                output_path=output_path,
-                               tolerance=tolerance)
+                               tolerance=tolerance,
+                               n_jobs=n_jobs)
 
             ms.generate_ms_results()
 
