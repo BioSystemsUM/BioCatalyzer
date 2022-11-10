@@ -498,6 +498,8 @@ class BioReactor:
         bool
             True if mol matches conditions to remove, False otherwise.
         """
+        if '*' in smiles:
+            return False
         if self._min_atom_count > 0:
             if not self._min_atom_count_filter(smiles):
                 return False
@@ -620,7 +622,7 @@ class BioReactor:
 
 if __name__ == '__main__':
     output_path_ = 'results/results_example/'
-    br = BioReactor(compounds_path='data/compounds/drugs_paper_subset.csv',
+    br = BioReactor(compounds_path='data/compounds/drugs.csv',
                     output_path=output_path_,
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',
