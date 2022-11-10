@@ -2,3 +2,5 @@ smiles	compound_id
 CN1C=NC2=C1C(=O)N(C(=O)N2C)C	Caffeine
 C(C1C(C(C(C(O1)O)O)O)O)O	D-Glucose
 CC(=O)OC1=CC=CC=C1C(=O)O	Aspirin
+Nc1nc(NC2CC2)c2ncn(C3C=CC(CO)C3)c2n1	ABACAVIR SULFATE
+CCCC(=O)Nc1ccc(OCC(O)C[NH2+]C(C)C)c(C(C)=O)c1	ACEBUTOLOL

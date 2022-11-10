@@ -1,9 +1,11 @@
 import logging
+import multiprocessing
 import os
 import time
 from typing import Union
 
 import pandas as pd
+from pandarallel import pandarallel
 
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
@@ -22,7 +24,8 @@ class MSDataMatcher:
                  ms_data_path: str,
                  output_path: str,
                  compounds_to_match_path: str,
-                 tolerance: float = 0.02):
+                 tolerance: float = 0.02,
+                 n_jobs: int = 1):
         """
         Initialize the MSDataMatcher class.
 
@@ -36,6 +39,8 @@ class MSDataMatcher:
             Path to the new predicted compounds to match.
         tolerance: float
             The tolerance for the mass matching.
+        n_jobs: int
+            The number of jobs to run in parallel.
         """
         self._set_up_data_files(compounds_to_match_path)
         if isinstance(self._new_compounds, pd.DataFrame):
@@ -46,6 +51,10 @@ class MSDataMatcher:
         self._output_path = output_path
         self._set_output_path(self._output_path)
         self._tolerance = tolerance
+        if n_jobs == -1:
+            self._n_jobs = multiprocessing.cpu_count()
+        else:
+            self._n_jobs = n_jobs
         self._calculate_masses()
         self._matches = None
 
@@ -270,7 +279,8 @@ class MSDataMatcher:
             pandas dataframe with the matches.
         """
         ms_df = self._new_compounds
-        ms_df['Index'] = self._new_compounds.apply(
+        pandarallel.initialize(nb_workers=self._n_jobs)
+        ms_df['Index'] = self._new_compounds.parallel_apply(
             lambda x: self._match_to_parent(x['NewCompoundExactMass'],
                                             '_'.join(x['NewCompoundID'].split('_')[:-1])), axis=1)
 
@@ -306,6 +316,7 @@ if __name__ == '__main__':
     ms = MSDataMatcher(ms_data_path='data/ms_data_example/ms_data_paper.tsv',
                        compounds_to_match_path='results/results_example/new_compounds.tsv',
                        output_path=output_path_,
-                       tolerance=0.0015)
+                       tolerance=0.0015,
+                       n_jobs=-1)
     logging.basicConfig(filename=f'{output_path_}logging_matcher.log', level=logging.DEBUG)
     ms.generate_ms_results()
