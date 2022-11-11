@@ -2,8 +2,6 @@
 
 This CLI can be used to predicted metabolic products and associated enzymes for a set of input compounds.
 
-**NOTE: if you want to use our full set of Reaction Rules download this [file](https://drive.google.com/file/d/1t2uYkKA8MjkIokSKNDESU27an1wW3CRK/view?usp=sharing) and provide its path in the `--reaction_rules` argument.**
-
 ## Command Line Interface
 
 ```bash

@@ -1,6 +1,6 @@
 from typing import Union, List
 
-from rdkit import Chem, DataStructs
+from rdkit import Chem, DataStructs, RDLogger
 from rdkit.Chem import MolFromSmiles, Mol, MolToSmiles, RemoveHs, AllChem, Descriptors
 from rdkit.Chem.Fingerprints.FingerprintMols import FingerprintMol
 from rdkit.Chem.MolStandardize.rdMolStandardize import Uncharger
@@ -33,6 +33,32 @@ class ChemUtils:
             return MolToSmiles(RemoveHs(MolFromSmiles(smiles)), isomericSmiles=True)
         except TypeError:
             return None
+
+    @staticmethod
+    def smiles_to_mol(smiles: str):
+        """
+        Converts a SMILES string to an RDKit molecule.
+
+        Parameters
+        ----------
+        smiles: str
+            The SMILES string.
+
+        Returns
+        -------
+        Mol
+            The RDKit molecule.
+        """
+        try:
+            mol = MolFromSmiles(smiles)
+            return mol
+        except :
+            return None
+
+    @staticmethod
+    def rdkit_logs(enable=False):
+        if not enable:
+            RDLogger.DisableLog('rdApp.*')
 
     @staticmethod
     def validate_smiles(smiles: List[str]):
@@ -272,6 +298,7 @@ class ChemUtils:
         str
             The most similar compound SMILES string.
         """
+        # correct intramolecular reaction SMILES parentheses
         smiles_list = [_correct_number_of_parenthesis(s) for s in smiles_list]
         if len(smiles_list) == 1:
             return smiles_list[0]

@@ -14,7 +14,6 @@ class MatchMSDataCLITestCase(TestCase):
             os.makedirs(self.output_folder)
         self.ms_data_path = os.path.join(TESTS_DATA_PATH, 'ms_data_sample/ms_data.tsv')
         self.compounds_to_match_path = os.path.join(TESTS_DATA_PATH, 'results_sample/new_compounds.tsv')
-        self.mode = 'mass'
         self.tolerance = 0.02
 
     def tearDown(self):
@@ -51,21 +50,6 @@ class TestMatcherCLI(MatchMSDataCLITestCase, TestCase):
     def test_matcher_cli_working(self):
         exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path}")
         self.assertEqual(exit_status, 0)
-
-    def test_matcher_mode_mass(self):
-        exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path} "
-                                f"--mode={self.mode}")
-        self.assertEqual(exit_status, 0)
-
-    def test_matcher_mode_mass_diff(self):
-        exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path} "
-                                f"--mode=mass_diff")
-        self.assertEqual(exit_status, 0)
-
-    def test_matcher_invalid_mode(self):
-        exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path} "
-                                f"--mode=invalid_mode")
-        self.assertEqual(exit_status, 512)
 
     def test_matcher_invalid_tolerance(self):
         exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path} "

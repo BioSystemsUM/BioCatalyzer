@@ -65,7 +65,10 @@ class Loaders:
         """
         if not Loaders._verify_file(path):
             raise FileNotFoundError(f"File {path} not found.")
-        rules = pd.read_csv(path, header=0, sep='\t')
+        if path.endswith('.bz2'):
+            rules = pd.read_csv(path, header=0, sep='\t', compression='bz2')
+        else:
+            rules = pd.read_csv(path, header=0, sep='\t')
         if 'InternalID' not in rules.columns:
             raise ValueError('The reaction rules file must contain a column named "InternalID".')
         if 'Reactants' not in rules.columns:
@@ -184,7 +187,7 @@ class Loaders:
         return True
 
     @staticmethod
-    def load_ms_data(path: str, mode: str = 'mass'):
+    def load_ms_data(path: str):
         """
         Load the MS data.
 
@@ -192,8 +195,6 @@ class Loaders:
         ----------
         path: str
             Path to the MS data.
-        mode: str
-            The mode to use. Can be 'mass' or 'mass_diff'.
 
         Returns
         -------
@@ -206,14 +207,8 @@ class Loaders:
                 raise ValueError('The MS data file must contain a column named "ParentCompound".')
             if 'ParentCompoundSmiles' not in ms_data.columns:
                 raise ValueError('The MS data file must contain a column named "ParentCompoundSmiles".')
-            if mode == 'mass':
-                if 'Mass' not in ms_data.columns:
-                    raise ValueError('The MS data file must contain a column named "Mass".')
-            elif mode == 'mass_diff':
-                if 'MassDiff' not in ms_data.columns:
-                    raise ValueError('The MS data file must contain a column named "MassDiff".')
-            else:
-                raise ValueError(f"Mode {mode} not supported.")
+            if 'Mass' not in ms_data.columns:
+                raise ValueError('The MS data file must contain a column named "Mass".')
             return ms_data
         else:
             raise FileNotFoundError(f"File {path} not found.")

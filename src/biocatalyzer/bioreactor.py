@@ -7,8 +7,6 @@ import uuid
 from typing import Union
 
 import pandas as pd
-from rdkit import RDLogger
-from rdkit.Chem import MolFromSmiles
 from tqdm import tqdm
 
 from biocatalyzer._utils import _merge_fields
@@ -59,7 +57,7 @@ class BioReactor:
             The number of jobs to run in parallel.
         """
         # silence RDKit logger
-        RDLogger.DisableLog('rdApp.*')
+        ChemUtils.rdkit_logs(False)
         self._compounds_path = compounds_path
         self._output_path = output_path
         self._neutralize = neutralize_compounds
@@ -81,7 +79,6 @@ class BioReactor:
             self._n_jobs = n_jobs
         self._new_compounds_path = os.path.join(self._output_path, 'new_compounds.tsv')
         self._new_compounds = None
-        self._new_compounds_flag = False
 
     @property
     def compounds(self):
@@ -149,7 +146,7 @@ class BioReactor:
         pd.DataFrame
             The new compounds generated.
         """
-        if self._new_compounds_flag:
+        if self._new_compounds is not None:
             return Loaders.load_compounds(self._new_compounds_path, False)
         else:
             raise ValueError('No compounds generated yet. Run the BioReactor react method first.')
@@ -397,7 +394,7 @@ class BioReactor:
     def _set_up_files(self):
         if self._reaction_rules_path == 'default':
             self._reaction_rules_path = os.path.join(
-                DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
+                DATA_FILES, 'data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
         if self._molecules_to_remove_path == 'default':
             self._molecules_to_remove_path = os.path.join(DATA_FILES, 'data/byproducts_to_remove/byproducts.tsv')
         if self._patterns_to_remove_path == 'default':
@@ -436,7 +433,7 @@ class BioReactor:
         """
         if len(self._patterns_to_remove) == 0:
             return False
-        mol = MolFromSmiles(smiles)
+        mol = ChemUtils.smiles_to_mol(smiles)
         if not mol:
             return True
         for bp in self._patterns_to_remove:
@@ -458,7 +455,7 @@ class BioReactor:
         bool
             True if mol has at least the minimum number of atoms, False otherwise.
         """
-        mol = MolFromSmiles(smiles)
+        mol = ChemUtils.smiles_to_mol(smiles)
         if not mol:
             return False
         if mol.GetNumHeavyAtoms() >= self._min_atom_count:
@@ -501,6 +498,8 @@ class BioReactor:
         bool
             True if mol matches conditions to remove, False otherwise.
         """
+        if '*' in smiles:
+            return False
         if self._min_atom_count > 0:
             if not self._min_atom_count_filter(smiles):
                 return False
@@ -528,7 +527,7 @@ class BioReactor:
         """
         return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
 
-    def process_results(self, save: bool = True):
+    def process_results(self, save: bool = True, overwrite: bool = True):
         """
         Process the results of the reactor.
         Group results by unique SMILES and merges the other columns.
@@ -537,11 +536,13 @@ class BioReactor:
         ----------
         save: bool
             If True, save the results to a file.
+        overwrite: bool
+            If True, overwrite the results file if it already exists.
 
         Returns
         -------
-        pd.DataFrame
-            The processed results.
+        Tuple[pd.DataFrame, str]
+            The processed results and the path to the results file.
         """
         results = pd.read_csv(self._new_compounds_path, sep='\t', header=0)
         results.EC_Numbers = results.EC_Numbers.fillna('')
@@ -559,9 +560,15 @@ class BioReactor:
         results['NewReactionSmiles'] = results['NewReactionSmiles'].apply(lambda x: _merge_fields(x))
         results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
         if save:
-            results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
-            results.to_csv(results_file_proc, sep='\t', index=False)
-        return results
+            if overwrite:
+                results_file_proc = os.path.join(self._output_path, 'new_compounds.tsv')
+                results.to_csv(results_file_proc, sep='\t', index=False)
+            else:
+                results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
+                results.to_csv(results_file_proc, sep='\t', index=False)
+        else:
+            results_file_proc = self._new_compounds_path
+        return results, results_file_proc
 
     def _react_single(self, smiles: str, smarts: str):
         """
@@ -596,7 +603,6 @@ class BioReactor:
                         with open(self._new_compounds_path, 'a') as f:
                             f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
                                     f"{most_similar_product}\t{result}\t{ecs}\n")
-                        self._new_compounds_flag = True
 
     def react(self):
         """
@@ -612,14 +618,11 @@ class BioReactor:
         self._new_compounds = f"New products saved to {self._new_compounds_path}"
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
-        if self._new_compounds_flag:
-            return True
-        return False
 
 
 if __name__ == '__main__':
     output_path_ = 'results/results_example/'
-    br = BioReactor(compounds_path='data/compounds/drugs_paper_subset.csv',
+    br = BioReactor(compounds_path='data/compounds/drugs.csv',
                     output_path=output_path_,
                     organisms_path='data/organisms/organisms_to_use.tsv',
                     patterns_to_remove_path='data/patterns_to_remove/patterns.tsv',

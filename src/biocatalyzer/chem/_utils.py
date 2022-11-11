@@ -1,7 +1,7 @@
 def _correct_number_of_parenthesis(smiles: str):
     """
     Corrects the number of parenthesis of a SMILES string.
-    Sometimes the react method returns a SMILES string with an incorrect number of parenthesis.
+    Sometimes some output SMILES string with an incorrect number of parenthesis are generated.
     This method corrects that issue.
 
     Parameters
@@ -14,7 +14,8 @@ def _correct_number_of_parenthesis(smiles: str):
     str
         The corrected SMILES string.
     """
-    # deal with cases where invalid number of parentheses are generated
+    # intramolecular reactions SMILES are represented differently and the parenthesis need to be corrected
+    # by this function
     if (smiles.count('(') + smiles.count(')')) % 2 != 0:
         if smiles[0] == '(':
             smiles = smiles[1:]

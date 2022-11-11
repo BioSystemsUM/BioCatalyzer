@@ -1,9 +1,11 @@
 import logging
+import multiprocessing
 import os
 import time
 from typing import Union
 
 import pandas as pd
+from pandarallel import pandarallel
 
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
@@ -22,8 +24,8 @@ class MSDataMatcher:
                  ms_data_path: str,
                  output_path: str,
                  compounds_to_match_path: str,
-                 mode: str = 'mass',
-                 tolerance: float = 0.02):
+                 tolerance: float = 0.02,
+                 n_jobs: int = 1):
         """
         Initialize the MSDataMatcher class.
 
@@ -35,19 +37,25 @@ class MSDataMatcher:
             Path to the output directory.
         compounds_to_match_path: str
             Path to the new predicted compounds to match.
-        mode: str
-            The mode of the matcher. Either 'mass' or 'mass_diff'.
         tolerance: float
             The tolerance for the mass matching.
+        n_jobs: int
+            The number of jobs to run in parallel.
         """
+        self._set_up_data_files(compounds_to_match_path)
+        if isinstance(self._new_compounds, pd.DataFrame):
+            if self._new_compounds.shape[0] == 0:
+                raise ValueError('The new compounds file is empty!')
         self._ms_data_path = ms_data_path
-        self._ms_data = Loaders.load_ms_data(self._ms_data_path, mode)
+        self._ms_data = Loaders.load_ms_data(self._ms_data_path)
         self._output_path = output_path
         self._set_output_path(self._output_path)
-        self._mode = mode
         self._tolerance = tolerance
-        self._set_up_data_files(compounds_to_match_path)
-        self._prepare_mode()
+        if n_jobs == -1:
+            self._n_jobs = multiprocessing.cpu_count()
+        else:
+            self._n_jobs = n_jobs
+        self._calculate_masses()
         self._matches = None
 
     @property
@@ -102,7 +110,7 @@ class MSDataMatcher:
         if path != self._ms_data_path:
             self._ms_data_path = path
             logging.info('Loading MS data with the new path information...')
-            self._ms_data = Loaders.load_ms_data(self._ms_data_path, self._mode)
+            self._ms_data = Loaders.load_ms_data(self._ms_data_path)
         if self._matches is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -130,36 +138,6 @@ class MSDataMatcher:
         """
         self._set_up_data_files(new_compounds)
         logging.info('Loading the new compounds to match with the new path information...')
-        self._prepare_mode()
-        if self._matches is not None:
-            logging.warning('Results should be generated again for the new information provided!')
-
-    @property
-    def mode(self):
-        """
-        Returns the mode of the matcher.
-
-        Returns
-        -------
-        str:
-            The mode of the matcher.
-        """
-        return self._mode
-
-    @mode.setter
-    def mode(self, mode: str):
-        """
-        Set the mode of the matcher.
-
-        Parameters
-        ----------
-        mode: str
-            The mode of the matcher.
-        """
-        if mode != self._mode:
-            self._mode = mode
-            self._ms_data = Loaders.load_ms_data(self._ms_data_path, mode)
-            self._prepare_mode()
         if self._matches is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -214,24 +192,6 @@ class MSDataMatcher:
         """
         raise AttributeError('Matches cannot be set manually! You need to run the generate_ms_results method!')
 
-    def _prepare_mode(self):
-        """
-        Processes the new compounds data according to the mode.
-        """
-        if self._mode == 'mass':
-            self._ms_field = 'Mass'
-            self._new_compounds['NewCompoundExactMass'] = \
-                [ChemUtils.calc_exact_mass(m) for m in self._new_compounds.NewCompoundSmiles.values]
-        elif self._mode == 'mass_diff':
-            self._ms_field = 'MassDiff'
-            self._new_compounds['NewCompoundExactMass'] = \
-                [ChemUtils.calc_exact_mass(m) for m in self._new_compounds.NewCompoundSmiles.values]
-            self._new_compounds['NewCompoundExactMassDiff'] = \
-                [ChemUtils.calc_exact_mass(row['OriginalCompoundSmiles']) -
-                 ChemUtils.calc_exact_mass(row['NewCompoundSmiles']) for i, row in self._new_compounds.iterrows()]
-        else:
-            raise ValueError('The mode must be either "mass" or "mass_dif".')
-
     def _set_up_data_files(self, new_compounds: str):
         """
         Set up the reaction rules and new compounds data files.
@@ -280,6 +240,35 @@ class MSDataMatcher:
                 raise FileExistsError(f"File {output_path} already exists. Define a different output path so that "
                                       f"previous results are not overwritten.")
 
+    def _calculate_masses(self):
+        """
+        Calculate the masses of the new compounds.
+        """
+        self._new_compounds['NewCompoundExactMass'] = \
+            [ChemUtils.calc_exact_mass(m) for m in self._new_compounds.NewCompoundSmiles.values]
+        self._new_compounds['NewCompoundExactMass'] = self._new_compounds['NewCompoundSmiles'].apply(
+            lambda x: ChemUtils.calc_exact_mass(x))
+
+    def _match_to_parent(self, value: float, parent: str):
+        """
+        Match the mass value to the parent products.
+
+        Parameters
+        ----------
+        value: float
+            The value to match.
+        parent: str
+            The parent compound.
+
+        Returns
+        -------
+        list:
+            The list of matched indexes.
+        """
+        ms_data = self._ms_data[self._ms_data['ParentCompound'] == parent]
+        matches = match_value(value, ms_data['Mass'].values, self._tolerance)
+        return ms_data.iloc[matches].index.values
+
     def _match_masses(self):
         """
         Match the masses.
@@ -289,46 +278,19 @@ class MSDataMatcher:
         pd.DataFrame:
             pandas dataframe with the matches.
         """
-        ms_df = pd.DataFrame(columns=['Index', 'ParentCompound', 'ParentCompoundSmiles', "ParentCompound_ExactMass",
-                                      self._ms_field, 'NewCompoundID', 'NewCompoundSmiles', 'NewCompoundExactMass',
-                                      'EC_Numbers'])
-        for i, row in self._new_compounds.iterrows():
-            mv, mi = match_value(row['NewCompoundExactMass'], self._ms_data[self._ms_field].values, self._tolerance)
-            if mv and self._ms_data.loc[mi, 'ParentCompound'] == '_'.join(row['NewCompoundID'].split('_')[:-1]):
-                ms_df.loc[len(ms_df)] = [mi, self._ms_data.loc[mi, 'ParentCompound'],
-                                         self._ms_data.loc[mi, 'ParentCompoundSmiles'],
-                                         ChemUtils.calc_exact_mass(self._ms_data.loc[mi, 'ParentCompoundSmiles']),
-                                         self._ms_data.loc[mi, self._ms_field],
-                                         row['NewCompoundID'],
-                                         row['NewCompoundSmiles'],
-                                         row['NewCompoundExactMass'],
-                                         row['EC_Numbers']]
-        return ms_df
+        ms_df = self._new_compounds
+        pandarallel.initialize(nb_workers=self._n_jobs)
+        ms_df['Index'] = self._new_compounds.parallel_apply(
+            lambda x: self._match_to_parent(x['NewCompoundExactMass'],
+                                            '_'.join(x['NewCompoundID'].split('_')[:-1])), axis=1)
 
-    def _match_mass_diff(self):
-        """
-        Match mass differences.
-
-        Returns
-        -------
-        pd.DataFrame:
-            pandas dataframe with the matches.
-        """
-        ms_df = pd.DataFrame(columns=['Index', 'ParentCompound', 'ParentCompoundSmiles', "ParentCompound_ExactMass",
-                                      self._ms_field, 'NewCompoundID', 'NewCompoundSmiles', 'NewCompoundExactMass',
-                                      'NewCompoundExactMassDiff', 'EC_Numbers'])
-        for i, row in self._new_compounds.iterrows():
-            mv, mi = match_value(row['NewCompoundExactMassDiff'], self._ms_data[self._ms_field].values, self._tolerance)
-            if mv and self._ms_data.loc[mi, 'ParentCompound'] == row['NewCompoundID'].split('_')[0]:
-                ms_df.loc[len(ms_df)] = [mi, self._ms_data.loc[mi, 'ParentCompound'],
-                                         self._ms_data.loc[mi, 'ParentCompoundSmiles'],
-                                         ChemUtils.calc_exact_mass(self._ms_data.loc[mi, 'ParentCompoundSmiles']),
-                                         self._ms_data.loc[mi, self._ms_field],
-                                         row['NewCompoundID'],
-                                         row['NewCompoundSmiles'],
-                                         row['NewCompoundExactMass'],
-                                         row['NewCompoundExactMassDiff'],
-                                         row['EC_Numbers']]
+        ms_df = self._new_compounds[self._new_compounds['Index'].map(lambda d: len(d)) > 0]
+        ms_df = ms_df.explode('Index')
+        ms_df.drop(columns=['OriginalReactionRuleID', 'NewReactionSmiles'], inplace=True)
+        ms_df['ParentCompoundExactMass'] = [ChemUtils.calc_exact_mass(m) for m in ms_df.OriginalCompoundSmiles.values]
+        ms_df['MassDiff'] = ms_df['ParentCompoundExactMass'] - ms_df['NewCompoundExactMass']
+        ms_df = ms_df[['Index', 'OriginalCompoundID', 'OriginalCompoundSmiles', "ParentCompoundExactMass",
+                       'NewCompoundID', 'NewCompoundSmiles', 'NewCompoundExactMass', 'MassDiff', 'EC_Numbers']]
         return ms_df
 
     def generate_ms_results(self):
@@ -341,12 +303,7 @@ class MSDataMatcher:
             pandas dataframe with the matches.
         """
         t0 = time.time()
-        if self._mode == 'mass':
-            self._matches = self._match_masses()
-        elif self._mode == 'mass_diff':
-            self._matches = self._match_mass_diff()
-        else:
-            raise ValueError('The mode must be either "mass" or "mass_dif".')
+        self._matches = self._match_masses()
         self._matches.to_csv(self._output_path + '/matches.tsv', sep='\t', index=False)
         logging.info(f"Matches saved to {self._output_path}/matches.tsv")
         logging.info(f"{self._matches.shape[0]} matches found!")
@@ -359,7 +316,7 @@ if __name__ == '__main__':
     ms = MSDataMatcher(ms_data_path='data/ms_data_example/ms_data_paper.tsv',
                        compounds_to_match_path='results/results_example/new_compounds.tsv',
                        output_path=output_path_,
-                       mode='mass',
-                       tolerance=0.0015)
+                       tolerance=0.0015,
+                       n_jobs=-1)
     logging.basicConfig(filename=f'{output_path_}logging_matcher.log', level=logging.DEBUG)
     ms.generate_ms_results()
