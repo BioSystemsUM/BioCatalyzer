@@ -498,6 +498,8 @@ class BioReactor:
         bool
             True if mol matches conditions to remove, False otherwise.
         """
+        if smiles is None:
+            return False
         if '*' in smiles:
             return False
         if self._min_atom_count > 0:
