@@ -102,6 +102,7 @@ def biocatalyzer_cli(compounds,
 
         output_path: Path to the output directory.
     """
+    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     if reaction_rules is None:
         logging.info(f"Using default reaction rules file.")
         reaction_rules = os.path.join(
@@ -131,8 +132,6 @@ def biocatalyzer_cli(compounds,
                                n_jobs=n_jobs)
 
             ms.generate_ms_results()
-
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
 
 
 if __name__ == "__main__":
