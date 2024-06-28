@@ -605,6 +605,10 @@ class BioReactor:
                         with open(self._new_compounds_path, 'a',  newline='', encoding='utf-8') as f:
                             f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
                                     f"{most_similar_product}\t{result}\t{ecs}\n")
+                            if f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t{most_similar_product}\t{result}\t{ecs}\n".split('\t') != 7:
+                                e = f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t{most_similar_product}\t{result}\t{ecs}\n"
+                                raise ValueError('Wrong number of columns. Got: ', e)
+
 
     def react(self):
         """
