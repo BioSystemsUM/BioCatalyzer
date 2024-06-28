@@ -602,7 +602,7 @@ class BioReactor:
                         if self._neutralize:
                             most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
                         ecs = self._get_ec_numbers(smarts_id)
-                        with open(self._new_compounds_path, 'a') as f:
+                        with open(self._new_compounds_path, 'a',  newline='', encoding='utf-8') as f:
                             f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
                                     f"{most_similar_product}\t{result}\t{ecs}\n")
 
