@@ -546,7 +546,7 @@ class BioReactor:
         Tuple[pd.DataFrame, str]
             The processed results and the path to the results file.
         """
-        results = pd.read_csv(self._new_compounds_path, sep='\t', header=0)
+        results = pd.read_csv(self._new_compounds_path, sep='\t', header=0, lineterminator='\n')
         results.EC_Numbers = results.EC_Numbers.fillna('')
         results = results.groupby(['OriginalCompoundID', 'NewCompoundSmiles']).agg({'OriginalCompoundSmiles': 'first',
                                                                                     'OriginalReactionRuleID': ';'.join,
