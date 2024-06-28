@@ -1,4 +1,5 @@
 import os
+import platform
 import shutil
 from unittest import TestCase
 
@@ -36,13 +37,14 @@ class TestBioCatalyzerCLI(BioCatalyzerCLITestCase, TestCase):
         self.assertEqual(exit_status, 0)
 
     def test_biocatalyzer_cli_missing_args(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # missing argument 'COMPOUNDS'
         exit_status = os.system('biocatalyzer_cli')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
         # missing argument 'OUTPUT_PATH'
         exit_status = os.system('biocatalyzer_cli dummy_arg_1')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_biocatalyzer_cli_working(self):
         exit_status = os.system(f"biocatalyzer_cli {self.compounds_path} {self.output_folder}")
