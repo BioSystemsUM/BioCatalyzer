@@ -607,7 +607,7 @@ class BioReactor:
                                     f"{most_similar_product}\t{result}\t{ecs}\n")
                             if f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t{most_similar_product}\t{result}\t{ecs}\n".split('\t') != 7:
                                 e = f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t{most_similar_product}\t{result}\t{ecs}\n"
-                                raise ValueError('Wrong number of columns. Got: ', e)
+                                raise ValueError(f'Wrong number of columns. Got {len(e.split("\t"))} columns. {e}')
 
 
     def react(self):
