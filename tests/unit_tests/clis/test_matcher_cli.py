@@ -1,6 +1,6 @@
 import os
 import shutil
-from sys import platform
+import platform
 from unittest import TestCase
 
 from tests import TESTS_DATA_PATH
