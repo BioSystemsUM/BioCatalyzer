@@ -12,7 +12,7 @@ from tests import TESTS_DATA_PATH
 class MSDataMatcherTestCase(TestCase):
 
     def setUp(self):
-        self.output_folder = TESTS_DATA_PATH / 'results_sample'
+        self.output_folder = TESTS_DATA_PATH / 'results_sample2'
         self.new_output_folder = TESTS_DATA_PATH / 'new_results_sample'
         # Ensure the directories exist
         self.output_folder.mkdir(parents=True, exist_ok=True)
