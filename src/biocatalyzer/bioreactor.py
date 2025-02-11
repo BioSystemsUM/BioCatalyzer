@@ -1,6 +1,8 @@
 import itertools
 import logging
 import multiprocessing
+import os
+import tempfile
 import time
 import uuid
 from typing import Union
@@ -572,7 +574,7 @@ class BioReactor:
             results_file_proc = self._new_compounds_path
         return results, results_file_proc
 
-    def _react_single(self, smiles: str, smarts: str):
+    def _react_single(self, smiles: str, smarts: str, result_queue: multiprocessing.Queue):
         """
         React a single compound with a single reaction rule.
         Writes the results to the output files.
@@ -583,46 +585,71 @@ class BioReactor:
             The smiles of the reactant.
         smarts: str
             The SMARTS string of the reaction.
+        result_queue: multiprocessing.Queue
+            The queue to store the results.
         """
         reactants = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
         reactants = reactants.replace("Any", smiles).split(';')
         results = ChemUtils.react(reactants, smarts)
-        if len(results) > 0:
-            smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
-            smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
-            most_similar_products_set = set()
-            for i, result in enumerate(results):
-                products = result.split('>')[-1].split('.')
-                # keep only the most similar compound to the input compound
-                most_similar_product = ChemUtils.most_similar_compound(smiles, products)
-                most_similar_product = ChemUtils.smiles_to_isomerical_smiles(most_similar_product)
-                if most_similar_product not in most_similar_products_set:
-                    most_similar_products_set.add(most_similar_product)
-                    if self._match_conditions(most_similar_product):
-                        if self._neutralize:
-                            most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
-                        ecs = self._get_ec_numbers(smarts_id)
-                        new_compound_data = (
-                            f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
-                            f"{most_similar_product}\t{result}\t{ecs}\n"
-                        )
-                        with open(self._new_compounds_path, 'a') as f:
-                            f.write(new_compound_data)
+        if len(results) == 0:
+            return
+        smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
+        smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
+        most_similar_products_set = set()
+        # Collect results in a list
+        output_rows = []
+        for result in results:
+            products = result.split('>')[-1].split('.')
+            most_similar_product = ChemUtils.most_similar_compound(smiles, products)
+            most_similar_product = ChemUtils.smiles_to_isomerical_smiles(most_similar_product)
+
+            if most_similar_product not in most_similar_products_set:
+                most_similar_products_set.add(most_similar_product)
+                if self._match_conditions(most_similar_product):
+                    if self._neutralize:
+                        most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
+                    ecs = self._get_ec_numbers(smarts_id)
+                    output_rows.append(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
+                                       f"{most_similar_product}\t{result}\t{ecs}\n")
+
+        # Write output to a temporary file, then add the filename to the result queue
+        if output_rows:
+            temp_file = tempfile.NamedTemporaryFile(delete=False, mode='w', newline='\n')
+            with open(temp_file.name, 'w') as f:
+                f.writelines(output_rows)
+            result_queue.put(temp_file.name)
 
     def react(self):
         """
         Transform reactants into products using the reaction rules.
+        Writes results incrementally and handles large files.
         """
         t0 = time.time()
         header = (
             'OriginalCompoundID\tOriginalCompoundSmiles\tOriginalReactionRuleID\tNewCompoundID\t'
             'NewCompoundSmiles\tNewReactionSmiles\tEC_Numbers\n'
         )
-        with open(self._new_compounds_path, 'w') as f:
+        # Ensure header is written to the final output file
+        with open(self._new_compounds_path, 'w', newline='\n') as f:
             f.write(header)
+
         params = list(itertools.product(self._compounds.smiles, self._reaction_rules.SMARTS))
-        with multiprocessing.Pool(self._n_jobs) as pool:
-            pool.starmap(self._react_single, tqdm(params, total=len(params)))
+        # Create a multiprocessing Manager to hold the result queue
+        with multiprocessing.Manager() as manager:
+            result_queue = manager.Queue()
+
+            # Start the multiprocessing pool
+            with multiprocessing.Pool(self._n_jobs) as pool:
+                pool.starmap(self._react_single, [(smiles, smarts, result_queue) for smiles, smarts in params])
+
+            # Once all processes are done, write the results from all temporary files
+            with open(self._new_compounds_path, 'a', newline='\n') as f:
+                while not result_queue.empty():
+                    temp_file = result_queue.get()
+                    with open(temp_file, 'r') as temp_f:
+                        f.write(temp_f.read())
+                    os.remove(temp_file)  # Clean up the temporary file
+
         self._new_compounds = f"New products saved to {self._new_compounds_path}"
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")
