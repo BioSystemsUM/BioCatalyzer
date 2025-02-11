@@ -2,6 +2,7 @@ import logging
 import multiprocessing
 import os
 import time
+from pathlib import Path
 from typing import Union
 
 import pandas as pd
@@ -11,7 +12,7 @@ from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 from biocatalyzer._utils import match_value
 
-DATA_FILES = os.path.dirname(__file__)
+DATA_FILES = Path(__file__).resolve().parent
 
 
 class MSDataMatcher:
@@ -48,8 +49,7 @@ class MSDataMatcher:
                 raise ValueError('The new compounds file is empty!')
         self._ms_data_path = ms_data_path
         self._ms_data = Loaders.load_ms_data(self._ms_data_path)
-        self._output_path = output_path
-        self._set_output_path(self._output_path)
+        self._set_output_path(output_path)
         self._tolerance = tolerance
         if n_jobs == -1:
             self._n_jobs = multiprocessing.cpu_count()
@@ -80,8 +80,7 @@ class MSDataMatcher:
         path: str
             The output path.
         """
-        self._output_path = path
-        self._set_output_path(self._output_path)
+        self._set_output_path(path)
         if self._matches is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -208,9 +207,8 @@ class MSDataMatcher:
         """
         Loads the reaction rules data file.
         """
-        self._reaction_rules_path = os.path.join(
-            DATA_FILES, 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv')
-        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path)
+        self._reaction_rules_path = DATA_FILES / 'data/reactionrules/all_reaction_rules_forward_no_smarts_duplicates_sample.tsv'
+        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path.as_posix())
 
     def _set_up_new_compounds(self, path: str):
         """
@@ -223,8 +221,7 @@ class MSDataMatcher:
         """
         self._new_compounds = Loaders.load_new_compounds(path)
 
-    @staticmethod
-    def _set_output_path(output_path: str):
+    def _set_output_path(self, output_path: str):
         """
         Make the output directory if it does not exist.
 
@@ -233,12 +230,16 @@ class MSDataMatcher:
         output_path: str
             The path to the output directory.
         """
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+        output_path = Path(output_path)
+        if not output_path.exists():
+            output_path.mkdir(parents=True)
         else:
-            if os.path.exists(output_path + '/matches.tsv'):
-                raise FileExistsError(f"File {output_path} already exists. Define a different output path so that "
-                                      f"previous results are not overwritten.")
+            if (output_path / 'matches.tsv').exists():
+                raise FileExistsError(
+                    f"File {output_path / 'matches.tsv'} already exists. Define a different output path so that "
+                    f"previous results are not overwritten."
+                )
+        self._output_path = output_path
 
     def _calculate_masses(self):
         """
@@ -304,8 +305,9 @@ class MSDataMatcher:
         """
         t0 = time.time()
         self._matches = self._match_masses()
-        self._matches.to_csv(self._output_path + '/matches.tsv', sep='\t', index=False)
-        logging.info(f"Matches saved to {self._output_path}/matches.tsv")
+        path = self._output_path / 'matches.tsv'
+        self._matches.to_csv(path, sep='\t', index=False)
+        logging.info(f"Matches saved to {path.as_posix()}")
         logging.info(f"{self._matches.shape[0]} matches found!")
         t1 = time.time()
         logging.info(f"Time elapsed: {t1 - t0} seconds")

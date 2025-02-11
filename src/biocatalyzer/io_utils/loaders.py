@@ -1,5 +1,7 @@
 import logging
 import os
+from pathlib import Path
+from typing import Union, List
 
 import pandas as pd
 from rdkit.Chem import MolFromSmarts, MolFromSmiles
@@ -30,6 +32,7 @@ class Loaders:
             pandas dataframe with the compounds to use.
         """
         if Loaders._verify_file(path):
+            path = Path(path)
             compounds = pd.read_csv(path, header=0, sep='\t')
             if 'smiles' not in compounds.columns:
                 raise ValueError('The compounds file must contain a column named "smiles".')
@@ -47,7 +50,7 @@ class Loaders:
             raise FileNotFoundError(f"File {path} not found.")
 
     @staticmethod
-    def load_reaction_rules(path, orgs='ALL'):
+    def load_reaction_rules(path: str, orgs: Union[str, List[str]] = 'ALL') -> pd.DataFrame:
         """
         Load the reaction rules to use.
 
@@ -65,7 +68,8 @@ class Loaders:
         """
         if not Loaders._verify_file(path):
             raise FileNotFoundError(f"File {path} not found.")
-        if path.endswith('.bz2'):
+        path = Path(path)
+        if path.suffix == '.bz2':
             rules = pd.read_csv(path, header=0, sep='\t', compression='bz2')
         else:
             rules = pd.read_csv(path, header=0, sep='\t')
@@ -87,7 +91,6 @@ class Loaders:
             return False
 
         if not isinstance(orgs, str):
-            # TODO: check if adding spontaneous reactions actually makes sense
             orgs.append('spontaneous_reaction')
             rules['has_org'] = rules.apply(lambda x: match_org(x['Organisms'], orgs), axis=1)
             rules = rules[rules['has_org']]
@@ -95,7 +98,7 @@ class Loaders:
         return rules
 
     @staticmethod
-    def load_organisms(path):
+    def load_organisms(path: str) -> Union[str, List[str]]:
         """
         Load the organisms to use.
 
@@ -106,17 +109,18 @@ class Loaders:
 
         Returns
         -------
-        pd.DataFrame:
-            pandas dataframe with the organisms to use.
+        Union[str, List[str]]:
+            List of organisms identifiers.
         """
         if path is None or path == 'None':
             return 'ALL'
         if Loaders._verify_file(path):
+            path = Path(path)
             orgs = pd.read_csv(path, header=0, sep='\t')
             if 'org_id' not in orgs.columns:
                 raise ValueError('The organisms file must contain a column named "org_id".')
-            logging.info(f'Using {list(orgs.org_id.values)} as the Organisms.')
-            return list(orgs.org_id.values)
+            logging.info(f'Using {orgs.org_id.to_list()} as the Organisms.')
+            return orgs.org_id.to_list()
         elif len(path.split('.')) > 1:
             raise FileNotFoundError(f"File {path} not found.")
         else:
@@ -140,6 +144,7 @@ class Loaders:
         """
         if path is None or path == 'None':
             return []
+        path = Path(path)
         byproducts = pd.read_csv(path, header=0, sep='\t')
         if 'smiles' not in byproducts.columns:
             raise ValueError('The molecules to remove file must contain a column named "smiles".')
@@ -162,6 +167,7 @@ class Loaders:
         """
         if path is None or path == 'None':
             return []
+        path = Path(path)
         patterns = pd.read_csv(path, header=0, sep='\t')
         if 'smarts' not in patterns.columns:
             raise ValueError('The patterns to remove file must contain a column named "smarts".')
@@ -182,7 +188,7 @@ class Loaders:
         bool:
             True if the file exists, False otherwise.
         """
-        if not os.path.exists(path):
+        if not Path(path).exists():
             return False
         return True
 
