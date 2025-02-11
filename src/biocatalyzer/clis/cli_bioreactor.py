@@ -1,11 +1,11 @@
 import logging
-import os
+from pathlib import Path
 
 import click
 
 from biocatalyzer import BioReactor
 
-DATA_FILES = os.path.dirname(__file__)
+DATA_FILES = Path(__file__).resolve().parent
 
 
 @click.command()
@@ -82,8 +82,8 @@ def bioreactor_cli(compounds,
         output_path: Path to the output directory.
     """
     if reaction_rules is None:
-        reaction_rules = os.path.join(
-            DATA_FILES, '../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
+        reaction_rules = DATA_FILES / "../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2"
+        reaction_rules = reaction_rules.resolve()
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
                     reaction_rules_path=reaction_rules,

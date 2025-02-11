@@ -1,12 +1,12 @@
 import logging
-import os
+from pathlib import Path
 
 import click
 
 from biocatalyzer.bioreactor import BioReactor
 from biocatalyzer.matcher import MSDataMatcher
 
-DATA_FILES = os.path.dirname(__file__)
+DATA_FILES = Path(__file__).resolve().parent
 
 
 @click.command()
@@ -105,8 +105,8 @@ def biocatalyzer_cli(compounds,
     logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     if reaction_rules is None:
         logging.info(f"Using default reaction rules file.")
-        reaction_rules = os.path.join(
-            DATA_FILES, '../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
+        reaction_rules = DATA_FILES / "../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2"
+        reaction_rules = reaction_rules.resolve()
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
                     reaction_rules_path=reaction_rules,

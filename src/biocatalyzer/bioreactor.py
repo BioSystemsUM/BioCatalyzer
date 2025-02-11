@@ -1,10 +1,10 @@
 import itertools
 import logging
 import multiprocessing
-import os
 import time
 import uuid
 from typing import Union
+from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
@@ -13,7 +13,7 @@ from biocatalyzer._utils import _merge_fields
 from biocatalyzer.chem import ChemUtils
 from biocatalyzer.io_utils import Loaders
 
-DATA_FILES = os.path.dirname(__file__)
+DATA_FILES = Path(__file__).resolve().parent
 
 
 class BioReactor:
@@ -59,7 +59,6 @@ class BioReactor:
         # silence RDKit logger
         ChemUtils.rdkit_logs(False)
         self._compounds_path = compounds_path
-        self._output_path = output_path
         self._neutralize = neutralize_compounds
         self._organisms_path = organisms_path
         self._reaction_rules_path = reaction_rules_path
@@ -68,7 +67,7 @@ class BioReactor:
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
-        self._set_output_path(self._output_path)
+        self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
@@ -77,7 +76,7 @@ class BioReactor:
             self._n_jobs = multiprocessing.cpu_count()
         else:
             self._n_jobs = n_jobs
-        self._new_compounds_path = os.path.join(self._output_path, 'new_compounds.tsv')
+        self._new_compounds_path = Path(self._output_path) / 'new_compounds.tsv'
         self._new_compounds = None
 
     @property
@@ -393,15 +392,13 @@ class BioReactor:
 
     def _set_up_files(self):
         if self._reaction_rules_path == 'default':
-            self._reaction_rules_path = os.path.join(
-                DATA_FILES, 'data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
+            self._reaction_rules_path = DATA_FILES / 'data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2'
         if self._molecules_to_remove_path == 'default':
-            self._molecules_to_remove_path = os.path.join(DATA_FILES, 'data/byproducts_to_remove/byproducts.tsv')
+            self._molecules_to_remove_path = DATA_FILES / 'data/byproducts_to_remove/byproducts.tsv'
         if self._patterns_to_remove_path == 'default':
-            self._patterns_to_remove_path = os.path.join(DATA_FILES, 'data/patterns_to_remove/patterns.tsv')
+            self._patterns_to_remove_path = DATA_FILES / 'data/patterns_to_remove/patterns.tsv'
 
-    @staticmethod
-    def _set_output_path(output_path: str):
+    def _set_output_path(self, output_path: str):
         """
         Make the output directory if it does not exist.
 
@@ -410,12 +407,15 @@ class BioReactor:
         output_path: str
             The path to the output directory.
         """
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
+        output_path = Path(output_path)
+        if not output_path.exists():
+            output_path.mkdir(parents=True)
         else:
-            if os.path.exists(output_path + '/results.tsv') or os.path.exists(output_path + '/new_compounds.tsv'):
-                raise FileExistsError(f"Results in {output_path} already exists. Define a different output path so "
-                                      f"that previous results are not overwritten.")
+            if (output_path / "results.tsv").exists() or (output_path / "new_compounds.tsv").exists():
+                raise FileExistsError(
+                    f"Results in {output_path} already exist. Define a different output path so that previous results are not overwritten."
+                )
+        self._output_path = output_path
 
     def _match_patterns(self, smiles: str):
         """
@@ -563,10 +563,10 @@ class BioReactor:
         results['EC_Numbers'] = results['EC_Numbers'].apply(lambda x: _merge_fields(x))
         if save:
             if overwrite:
-                results_file_proc = os.path.join(self._output_path, 'new_compounds.tsv')
+                results_file_proc = self._output_path / 'new_compounds.tsv'
                 results.to_csv(results_file_proc, sep='\t', index=False)
             else:
-                results_file_proc = os.path.join(self._output_path, 'new_compounds_processed.tsv')
+                results_file_proc = self._output_path / 'new_compounds_processed.tsv'
                 results.to_csv(results_file_proc, sep='\t', index=False)
         else:
             results_file_proc = self._new_compounds_path
@@ -602,18 +602,24 @@ class BioReactor:
                         if self._neutralize:
                             most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
                         ecs = self._get_ec_numbers(smarts_id)
+                        new_compound_data = (
+                            f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
+                            f"{most_similar_product}\t{result}\t{ecs}\n"
+                        )
                         with open(self._new_compounds_path, 'a') as f:
-                            f.write(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
-                                    f"{most_similar_product}\t{result}\t{ecs}\n")
+                            f.write(new_compound_data)
 
     def react(self):
         """
         Transform reactants into products using the reaction rules.
         """
         t0 = time.time()
+        header = (
+            'OriginalCompoundID\tOriginalCompoundSmiles\tOriginalReactionRuleID\tNewCompoundID\t'
+            'NewCompoundSmiles\tNewReactionSmiles\tEC_Numbers\n'
+        )
         with open(self._new_compounds_path, 'w') as f:
-            f.write('OriginalCompoundID\tOriginalCompoundSmiles\tOriginalReactionRuleID\tNewCompoundID\t'
-                    'NewCompoundSmiles\tNewReactionSmiles\tEC_Numbers\n')
+            f.write(header)
         params = list(itertools.product(self._compounds.smiles, self._reaction_rules.SMARTS))
         with multiprocessing.Pool(self._n_jobs) as pool:
             pool.starmap(self._react_single, tqdm(params, total=len(params)))
