@@ -1,5 +1,6 @@
 import os
 import shutil
+from pathlib import Path
 from unittest import TestCase
 
 from biocatalyzer.bioreactor import BioReactor
@@ -88,7 +89,7 @@ class TestBioReactor(BioReactorTestCase, TestCase):
             br.new_compounds = 'random_thing'
 
         output_path = br.output_path
-        self.assertEqual(output_path, self.output_folder)
+        self.assertEqual(output_path, Path(self.output_folder))
 
         br.output_path = self.new_output_folder
         shutil.rmtree(self.new_output_folder)

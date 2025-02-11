@@ -305,7 +305,7 @@ class MSDataMatcher:
         """
         t0 = time.time()
         self._matches = self._match_masses()
-        path = self._output_path / '/matches.tsv'
+        path = self._output_path / 'matches.tsv'
         self._matches.to_csv(path, sep='\t', index=False)
         logging.info(f"Matches saved to {path.as_posix()}")
         logging.info(f"{self._matches.shape[0]} matches found!")
