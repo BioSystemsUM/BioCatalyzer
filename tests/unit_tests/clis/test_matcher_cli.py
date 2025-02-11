@@ -1,5 +1,6 @@
 import os
 import shutil
+import platform
 from unittest import TestCase
 
 from tests import TESTS_DATA_PATH
@@ -28,30 +29,35 @@ class TestMatcherCLI(MatchMSDataCLITestCase, TestCase):
         self.assertEqual(exit_status, 0)
 
     def test_matcher_cli_missing_all_args(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # missing argument 'MS_DATA'
         exit_status = os.system('matcher_cli')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_matcher_cli_invalid_ms_data_path(self):
+        expected_exit_code = 256 if platform.system() != 'Windows' else 1
         # missing argument 'OUTPUT_PATH'
         exit_status = os.system('matcher_cli dummy_arg_1 dummy_arg_2 dummy_arg_3')
-        self.assertEqual(exit_status, 256)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_matcher_cli_missing_compounds_arg(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # dummy argumets (FileNotFoundError)
         exit_status = os.system(f'matcher_cli {self.ms_data_path}')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_matcher_cli_missing_output_path_arg(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # dummy argumets (FileNotFoundError)
         exit_status = os.system(f'matcher_cli {self.ms_data_path} {self.compounds_to_match_path}')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_matcher_cli_working(self):
         exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path}")
         self.assertEqual(exit_status, 0)
 
     def test_matcher_invalid_tolerance(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         exit_status = os.system(f"matcher_cli {self.ms_data_path} {self.compounds_to_match_path} {self.output_path} "
                                 f"--tolerance=invalid_tolerance")
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)

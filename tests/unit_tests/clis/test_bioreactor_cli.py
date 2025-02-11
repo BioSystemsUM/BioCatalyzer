@@ -1,4 +1,5 @@
 import os
+import platform
 import shutil
 from unittest import TestCase
 
@@ -33,18 +34,20 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
         self.assertEqual(exit_status, 0)
 
     def test_bioreactor_cli_missing_args(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # missing argument 'COMPOUNDS'
         exit_status = os.system('bioreactor_cli')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
         # missing argument 'OUTPUT_PATH'
         exit_status = os.system('bioreactor_cli dummy_arg_1')
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_cli_dummy_args(self):
+        expected_exit_code = 256 if platform.system() != 'Windows' else 1
         # dummy argumets (FileNotFoundError)
         exit_status = os.system('bioreactor_cli dummy_arg_1 dummy_arg_2')
-        self.assertEqual(exit_status, 256)
+        self.assertEqual(exit_status, expected_exit_code)
         shutil.rmtree('dummy_arg_2')
 
     def test_bioreactor_cli_working(self):
@@ -73,6 +76,7 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
         self.assertEqual(exit_status, 0)
 
     def test_bioreactor_invalid_neutralize(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # invalid neutralize value
         invalid_neutralize = 10
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={invalid_neutralize} " \
@@ -82,9 +86,10 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={self.n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_invalid_reaction_rules_path(self):
+        expected_exit_code = 256 if platform.system() != 'Windows' else 1
         # invalid reaction rules path
         invalid_reaction_rules_path = 'random_path'
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={self.neutralize} " \
@@ -94,9 +99,10 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={self.n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 256)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_invalid_organisms_path(self):
+        expected_exit_code = 256 if platform.system() != 'Windows' else 1
         # invalid organisms' path (it will use only spontaneous reactions)
         invalid_organisms_path = 'random_path'
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={self.neutralize} " \
@@ -117,7 +123,7 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={self.n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 256)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_valid_organisms_string(self):
         # valid organisms but in string format
@@ -131,6 +137,7 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
         self.assertEqual(exit_status, 0)
 
     def test_bioreactor_invalid_patterns_to_remove_path(self):
+        expected_exit_code = 256 if platform.system() != 'Windows' else 1
         # invalid patterns to remove path
         invalid_patterns_to_remove_path = 'random_path'
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={self.neutralize} " \
@@ -140,9 +147,10 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={self.n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 256)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_invalid_molecules_to_remove_path(self):
+        expected_exit_code = 256 if platform.system() != 'Windows' else 1
         # invalid molecules to remove path
         invalid_molecules_to_remove_path = 'random_path'
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={self.neutralize} " \
@@ -152,9 +160,10 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={self.n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 256)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_invalid_min_atom_count(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # invalid min atom count
         invalid_min_atom_count = True
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={self.neutralize} " \
@@ -164,9 +173,10 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={self.n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)
 
     def test_bioreactor_invalid_n_jobs(self):
+        expected_exit_code = 512 if platform.system() != 'Windows' else 2
         # invalid n_jobs
         invalid_n_jobs = True
         cli = f"bioreactor_cli {self.compounds_path} {self.output_path} --neutralize={self.neutralize} " \
@@ -176,4 +186,4 @@ class TestBioReactorCLI(BioReactorCLITestCase, TestCase):
               f"--n_jobs={invalid_n_jobs}"
 
         exit_status = os.system(cli)
-        self.assertEqual(exit_status, 512)
+        self.assertEqual(exit_status, expected_exit_code)

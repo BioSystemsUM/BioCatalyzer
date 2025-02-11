@@ -102,7 +102,9 @@ def biocatalyzer_cli(compounds,
 
         output_path: Path to the output directory.
     """
+    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     if reaction_rules is None:
+        logging.info(f"Using default reaction rules file.")
         reaction_rules = os.path.join(
             DATA_FILES, '../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2')
     br = BioReactor(compounds_path=compounds,
@@ -114,7 +116,6 @@ def biocatalyzer_cli(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
     br.react()
     _, new_results_path = br.process_results()
 
@@ -123,6 +124,7 @@ def biocatalyzer_cli(compounds,
             raise ValueError("The path to the MS data file is required when matching MS data.")
 
         else:
+            logging.info(f"Matching MS data.")
             ms = MSDataMatcher(ms_data_path=ms_data_path,
                                compounds_to_match_path=new_results_path,
                                output_path=output_path,
