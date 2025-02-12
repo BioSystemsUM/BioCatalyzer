@@ -7,53 +7,22 @@ on:
 
 jobs:
   build:
+    name: Create Release
+    permissions: write-all
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        python-version:
-          - '3.10'
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Get version from setup.cfg
+        id: get-version
+        run: echo "::set-output name=version::$(awk -F "=" '/^version/ {print $2}' setup.cfg | tr -d '[:space:]')"
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: v${{ steps.get-version.outputs.version }}
+          release_name: Release v${{ steps.get-version.outputs.version }}
           draft: false
           prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
-
-      - name: Extract Tag Name
-        id: get_version
-        run: echo "VERSION=${GITHUB_REF/refs/tags/}" >> $GITHUB_ENV
-
-      - name: Set Up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel build
-
-      - name: Build Package
-        run: python -m build
-
-      - name: Upload Release Asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/*
-          asset_name: package.zip
-          asset_content_type: application/zip
