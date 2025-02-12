@@ -25,4 +25,5 @@ jobs:
           tag_name: v${{ steps.get-version.outputs.version }}
           release_name: Release v${{ steps.get-version.outputs.version }}
           draft: false
-          prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
+          # prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-alpha') || contains(github.ref, '-rc') }}
+          prerelease: 'false'
