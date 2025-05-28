@@ -27,8 +27,9 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
-                 neutralize_compounds: bool = False,
                  reaction_rules_path: str = 'default',
+                 diameter: int = 6,
+                 neutralize_compounds: bool = False,
                  organisms_path: str = None,
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
@@ -47,6 +48,9 @@ class BioReactor:
             Whether to neutralize input compounds and generated compounds.
         reaction_rules_path: str
             The path to the file containing the reaction rules.
+        diameter: int
+            The diameter (in bonds) around the reaction center to consider when applying reaction rules.
+            Defines the size of the molecular environment included in the reaction transformations.
         organisms_path: str
             The path to the file containing the organisms to filter the reaction rules by.
         molecules_to_remove_path: str
