@@ -50,7 +50,7 @@ class Loaders:
             raise FileNotFoundError(f"File {path} not found.")
 
     @staticmethod
-    def load_reaction_rules(path: str, orgs: Union[str, List[str]] = 'ALL') -> pd.DataFrame:
+    def load_reaction_rules(path: str, diameter: int, orgs: Union[str, List[str]] = 'ALL') -> pd.DataFrame:
         """
         Load the reaction rules to use.
 
@@ -83,6 +83,11 @@ class Loaders:
             raise ValueError('The reaction rules file must contain a column named "EC_Numbers".')
         if 'Organisms' not in rules.columns:
             raise ValueError('The reaction rules file must contain a column named "Organisms".')
+        if 'Diameter' not in rules.columns:
+            raise ValueError('The reaction rules file must contain a column named "Diameter".')
+
+        # Filter by diameter
+        rules = rules[rules['Diameter'] <= diameter]
 
         def match_org(value, orgs_list):
             if isinstance(value, str):
