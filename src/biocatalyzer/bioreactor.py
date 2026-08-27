@@ -27,9 +27,8 @@ class BioReactor:
     def __init__(self,
                  compounds_path: str,
                  output_path: str,
-                 reaction_rules_path: str = 'default',
-                 diameter: int = 6,
                  neutralize_compounds: bool = False,
+                 reaction_rules_path: str = 'default',
                  organisms_path: str = None,
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
@@ -48,9 +47,6 @@ class BioReactor:
             Whether to neutralize input compounds and generated compounds.
         reaction_rules_path: str
             The path to the file containing the reaction rules.
-        diameter: int
-            The diameter (in bonds) around the reaction center to consider when applying reaction rules.
-            Defines the size of the molecular environment included in the reaction transformations.
         organisms_path: str
             The path to the file containing the organisms to filter the reaction rules by.
         molecules_to_remove_path: str
@@ -68,12 +64,11 @@ class BioReactor:
         self._neutralize = neutralize_compounds
         self._organisms_path = organisms_path
         self._reaction_rules_path = reaction_rules_path
-        self._diameter = diameter
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
-        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, self._diameter, orgs=self._orgs)
+        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
         self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
