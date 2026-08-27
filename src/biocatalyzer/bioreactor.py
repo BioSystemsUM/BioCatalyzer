@@ -30,6 +30,7 @@ class BioReactor:
                  neutralize_compounds: bool = False,
                  reaction_rules_path: str = 'default',
                  organisms_path: str = None,
+                 radius: Union[str, int] = 'ALL',
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
                  min_atom_count: int = 5,
@@ -49,6 +50,10 @@ class BioReactor:
             The path to the file containing the reaction rules.
         organisms_path: str
             The path to the file containing the organisms to filter the reaction rules by.
+        radius: Union[str, int]
+            The radius (or radii) of the reaction rules to use: an integer (6), a
+            ;-separated list ('4;6;8') or an inclusive range ('4:8'). 'ALL' disables
+            the filter. Only effective for rule sets that provide a 'Radius' column.
         molecules_to_remove_path: str
             The path to the file containing the molecules to remove from the products.
         patterns_to_remove_path: str
@@ -63,12 +68,14 @@ class BioReactor:
         self._compounds_path = compounds_path
         self._neutralize = neutralize_compounds
         self._organisms_path = organisms_path
+        self._radius = radius
         self._reaction_rules_path = reaction_rules_path
         self._molecules_to_remove_path = molecules_to_remove_path
         self._patterns_to_remove_path = patterns_to_remove_path
         self._set_up_files()
         self._orgs = Loaders.load_organisms(self._organisms_path)
-        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+        self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs,
+                                                          radius=self._radius)
         self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
         self._index_reaction_rules()
@@ -134,7 +141,8 @@ class BioReactor:
             The path to the file containing the reaction rules to use.
         """
         if reaction_rules_path != self._reaction_rules_path:
-            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=self._orgs)
+            self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=self._orgs,
+                                                              radius=self._radius)
             self._index_reaction_rules()
             self._reaction_rules_path = reaction_rules_path
         if self._new_compounds is not None:
@@ -280,7 +288,8 @@ class BioReactor:
             logging.info('Loading organisms again with the new path information...')
             self._orgs = Loaders.load_organisms(self._organisms_path)
             logging.info('Loading reaction rules again with the new organisms information...')
-            self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+            self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs,
+                                                               radius=self._radius)
             self._index_reaction_rules()
         if self._new_compounds is not None:
             logging.warning('Results should be generated again for the new information provided!')

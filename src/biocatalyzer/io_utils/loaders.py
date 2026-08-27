@@ -50,7 +50,9 @@ class Loaders:
             raise FileNotFoundError(f"File {path} not found.")
 
     @staticmethod
-    def load_reaction_rules(path: str, orgs: Union[str, List[str]] = 'ALL') -> pd.DataFrame:
+    def load_reaction_rules(path: str,
+                            orgs: Union[str, List[str]] = 'ALL',
+                            radius: Union[str, int, List[int]] = 'ALL') -> pd.DataFrame:
         """
         Load the reaction rules to use.
 
@@ -60,6 +62,13 @@ class Loaders:
             Path to the reaction rules.
         orgs: Union[list, str]
             List of organisms to use. If 'ALL', all organisms will be used.
+        radius: Union[str, int, List[int]]
+            Reaction rule radius (or radii) to keep. If 'ALL', no radius filter is applied.
+            Accepts an integer (6), a ;-separated list ('4;6;8') or a range ('4:8').
+            A rule is kept when any of these radii appears in its 'Radii' field, the
+            same membership test already used for 'Organisms'. Only applied when the
+            reaction rules file provides a 'Radii' column; rule sets without it
+            (e.g. the bundled ones) are left untouched.
 
         Returns
         -------
@@ -95,7 +104,47 @@ class Loaders:
             rules['has_org'] = rules.apply(lambda x: match_org(x['Organisms'], orgs), axis=1)
             rules = rules[rules['has_org']]
             rules.drop('has_org', axis=1, inplace=True)
+
+        if not (isinstance(radius, str) and radius == 'ALL'):
+            if 'Radii' not in rules.columns:
+                logging.warning("A radius filter was requested but the reaction rules file has no "
+                                "'Radii' column. The filter was ignored.")
+            else:
+                radii = Loaders._parse_radius(radius)
+
+                def match_radius(value, radii_list):
+                    if isinstance(value, str):
+                        return any(int(r) in radii_list for r in value.split(',') if r != '')
+                    return False
+
+                rules = rules[rules['Radii'].apply(lambda v: match_radius(v, radii))]
+                logging.info(f'Using {len(rules)} reaction rules modelled at radius in {sorted(radii)}.')
         return rules
+
+    @staticmethod
+    def _parse_radius(radius: Union[str, int, List[int]]) -> List[int]:
+        """
+        Parse the radius specification into an explicit list of radii.
+
+        Parameters
+        ----------
+        radius: Union[str, int, List[int]]
+            An integer (6), a ;-separated list ('4;6;8') or an inclusive range ('4:8').
+
+        Returns
+        -------
+        List[int]:
+            The radii to keep.
+        """
+        if isinstance(radius, int):
+            return [radius]
+        if isinstance(radius, (list, tuple)):
+            return [int(r) for r in radius]
+        radius = str(radius).strip()
+        if ':' in radius:
+            start, end = radius.split(':')
+            return list(range(int(start), int(end) + 1))
+        return [int(r) for r in radius.split(';') if r != '']
 
     @staticmethod
     def load_organisms(path: str) -> Union[str, List[str]]:
