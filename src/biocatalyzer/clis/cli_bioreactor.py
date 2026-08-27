@@ -30,13 +30,6 @@ DATA_FILES = Path(__file__).resolve().parent
               show_default=True,
               help="Path to reaction rules file.",
               )
-@click.option("--diameter",
-              "diameter",
-              type=int,
-              default=6,
-              show_default=True,
-              help="The diameter (number of bonds) of the reaction rule environment to consider during processing.",
-              )
 @click.option("--organisms",
               "organisms",
               type=str,
@@ -75,13 +68,11 @@ def bioreactor_cli(compounds,
                    output_path,
                    neutralize,
                    reaction_rules,
-                   diameter,
                    organisms,
                    patterns_to_remove,
                    molecules_to_remove,
                    min_atom_count,
-                   n_jobs,
-                   ):
+                   n_jobs):
     """Run the BioCatalyzer.
 
     Mandatory arguments:
@@ -96,14 +87,12 @@ def bioreactor_cli(compounds,
     br = BioReactor(compounds_path=compounds,
                     output_path=output_path,
                     reaction_rules_path=reaction_rules,
-                    diameter=diameter,
                     neutralize_compounds=neutralize,
                     organisms_path=organisms,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
-                    n_jobs=n_jobs,
-                    )
+                    n_jobs=n_jobs)
     logging.basicConfig(filename=f'{output_path}_logging.log', level=logging.DEBUG)
     br.react()
 
