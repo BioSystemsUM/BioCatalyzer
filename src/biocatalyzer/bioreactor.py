@@ -71,6 +71,7 @@ class BioReactor:
         self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
         self._set_output_path(output_path)
         self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+        self._index_reaction_rules()
         self._molecules_to_remove = Loaders.load_byproducts_to_remove(self._molecules_to_remove_path)
         self._patterns_to_remove = Loaders.load_patterns_to_remove(self._patterns_to_remove_path)
         self._min_atom_count = min_atom_count
@@ -106,6 +107,7 @@ class BioReactor:
         if compounds_path != self._compounds_path:
             self._compounds_path = compounds_path
             self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+            self._index_reaction_rules()
         if self._new_compounds is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -133,6 +135,7 @@ class BioReactor:
         """
         if reaction_rules_path != self._reaction_rules_path:
             self._reaction_rules = Loaders.load_reaction_rules(reaction_rules_path, orgs=self._orgs)
+            self._index_reaction_rules()
             self._reaction_rules_path = reaction_rules_path
         if self._new_compounds is not None:
             logging.warning('Results should be generated again for the new information provided!')
@@ -216,6 +219,7 @@ class BioReactor:
             self._compounds_path = compounds_path
             logging.info('Loading compounds again with the new path information...')
             self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+            self._index_reaction_rules()
         if self._new_compounds is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -245,6 +249,7 @@ class BioReactor:
             self._neutralize = neutralize
             logging.info('Loading compounds again with the new neutralize information...')
             self._compounds = Loaders.load_compounds(self._compounds_path, self._neutralize)
+            self._index_reaction_rules()
         if self._new_compounds is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -276,6 +281,7 @@ class BioReactor:
             self._orgs = Loaders.load_organisms(self._organisms_path)
             logging.info('Loading reaction rules again with the new organisms information...')
             self._reaction_rules = Loaders.load_reaction_rules(self._reaction_rules_path, orgs=self._orgs)
+            self._index_reaction_rules()
         if self._new_compounds is not None:
             logging.warning('Results should be generated again for the new information provided!')
 
@@ -418,6 +424,27 @@ class BioReactor:
                     f"Results in {output_path} already exist. Define a different output path so that previous results are not overwritten."
                 )
         self._output_path = output_path
+
+    def _index_reaction_rules(self):
+        """
+        Index the reaction rules by their SMARTS string.
+
+        `_react_single` needs the reactants, the identifier and the EC numbers of the
+        rule it is applying. Resolving them with a boolean mask over the reaction rules
+        dataframe costs a full table scan per (compound, rule) pair, which dominates the
+        runtime once the rule set grows past a few thousand entries. The mapping is
+        therefore built once, when the rules are loaded. SMARTS strings are unique in a
+        BioCatalyzer rule set, so the lookup returns exactly what the mask returned.
+        """
+        self._rules_by_smarts = {
+            smarts: (reactants, internal_id, ec_numbers)
+            for smarts, reactants, internal_id, ec_numbers in zip(
+                self._reaction_rules.SMARTS,
+                self._reaction_rules.Reactants,
+                self._reaction_rules.InternalID,
+                self._reaction_rules.EC_Numbers)
+        }
+        self._compound_ids_by_smiles = dict(zip(self._compounds.smiles, self._compounds.compound_id))
 
     def _match_patterns(self, smiles: str):
         """
@@ -588,13 +615,12 @@ class BioReactor:
         result_queue: multiprocessing.Queue
             The queue to store the results.
         """
-        reactants = self._reaction_rules[self._reaction_rules.SMARTS == smarts].Reactants.values[0]
+        reactants, smarts_id, ec_numbers = self._rules_by_smarts[smarts]
         reactants = reactants.replace("Any", smiles).split(';')
         results = ChemUtils.react(reactants, smarts)
         if len(results) == 0:
             return
-        smiles_id = self._compounds[self._compounds.smiles == smiles].compound_id.values[0]
-        smarts_id = self._reaction_rules[self._reaction_rules.SMARTS == smarts].InternalID.values[0]
+        smiles_id = self._compound_ids_by_smiles[smiles]
         most_similar_products_set = set()
         # Collect results in a list
         output_rows = []
@@ -608,7 +634,7 @@ class BioReactor:
                 if self._match_conditions(most_similar_product):
                     if self._neutralize:
                         most_similar_product = ChemUtils.uncharge_smiles(most_similar_product)
-                    ecs = self._get_ec_numbers(smarts_id)
+                    ecs = ec_numbers
                     output_rows.append(f"{smiles_id}\t{smiles}\t{smarts_id}\t{smiles_id}_{uuid.uuid4()}\t"
                                        f"{most_similar_product}\t{result}\t{ecs}\n")
 
