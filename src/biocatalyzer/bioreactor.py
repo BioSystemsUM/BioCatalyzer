@@ -30,7 +30,7 @@ class BioReactor:
                  neutralize_compounds: bool = False,
                  reaction_rules_path: str = 'default',
                  organisms_path: str = None,
-                 radius: Union[str, int] = 'ALL',
+                 radius: Union[str, int] = 6,
                  molecules_to_remove_path: Union[str, None] = 'default',
                  patterns_to_remove_path: Union[str, None] = 'default',
                  min_atom_count: int = 5,

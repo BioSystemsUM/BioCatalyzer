@@ -99,9 +99,28 @@ class RadiusFilterTestCase(TestCase):
                     for r in self.RADII)
         self.assertGreater(total, 11)
 
-    def test_default_applies_no_filter(self):
-        """Without a radius, every rule is kept."""
-        rules = Loaders.load_reaction_rules(path=self.rules_path)
+    def test_default_is_radius_6(self):
+        """
+        The default radius is 6, not 'ALL'.
+
+        Radius 6 was adopted as the operating point: on the case study it removes 99.4%
+        of the products generated at radius 0 while keeping 30 of the 33 input compounds
+        productive. Calling the loader without a radius must therefore select the same
+        rules as asking for radius 6 explicitly, and not the whole rule set.
+        """
+        implicit = Loaders.load_reaction_rules(path=self.rules_path)
+        explicit = Loaders.load_reaction_rules(path=self.rules_path, radius=6)
+        self.assertEqual(set(implicit['InternalID']), set(explicit['InternalID']))
+        self.assertEqual(set(implicit['InternalID']), self.expected[6])
+
+    def test_all_disables_the_filter(self):
+        """
+        'ALL' is how a caller opts out of the default.
+
+        This needed no test while the default was 'ALL'; it does now, because it is the
+        only way to recover the unfiltered rule set.
+        """
+        rules = Loaders.load_reaction_rules(path=self.rules_path, radius='ALL')
         self.assertEqual(len(rules), 11)
 
     def test_radius_composes_with_organisms(self):
