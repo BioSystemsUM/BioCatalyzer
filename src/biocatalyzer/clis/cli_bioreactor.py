@@ -39,7 +39,7 @@ DATA_FILES = Path(__file__).resolve().parent
 @click.option("--radius",
               "radius",
               type=str,
-              default='ALL',
+              default=6,
               show_default=True,
               help="Radius of the reaction rules to use: an integer (6), a ;-separated list "
                    "('4;6;8') or an inclusive range ('4:8'). Only applied to rule sets that "

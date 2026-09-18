@@ -52,7 +52,7 @@ class Loaders:
     @staticmethod
     def load_reaction_rules(path: str,
                             orgs: Union[str, List[str]] = 'ALL',
-                            radius: Union[str, int, List[int]] = 'ALL') -> pd.DataFrame:
+                            radius: Union[str, int, List[int]] = 6) -> pd.DataFrame:
         """
         Load the reaction rules to use.
 
@@ -107,8 +107,9 @@ class Loaders:
 
         if not (isinstance(radius, str) and radius == 'ALL'):
             if 'Radii' not in rules.columns:
-                logging.warning("A radius filter was requested but the reaction rules file has no "
-                                "'Radii' column. The filter was ignored.")
+                logging.warning(f"The radius filter (in effect: {radius}) was not applied: this "
+                                f"reaction rules file declares no 'Radii' column. All "
+                                f"{len(rules)} rules were kept. Pass radius='ALL' to silence this.")
             else:
                 radii = Loaders._parse_radius(radius)
 
