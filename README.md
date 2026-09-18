@@ -159,7 +159,7 @@ For the `matcher_cli` see [readme_matcher_cli.md](readme_matcher_cli.md).
 
 ## Cite
 
-Manuscript under preparation!
+Manuscript under preparation.
 
 ### Credits and License
 
