@@ -551,22 +551,6 @@ class BioReactor:
                 return False
         return True
 
-    def _get_ec_numbers(self, reaction_rule_id: str):
-        """
-        Get the EC numbers associated with a reaction rule.
-
-        Parameters
-        ----------
-        reaction_rule_id: str
-            The reaction rule id.
-
-        Returns
-        -------
-        str
-            The EC numbers associated with the reaction rule.
-        """
-        return self._reaction_rules[self._reaction_rules.InternalID == reaction_rule_id].EC_Numbers.values[0]
-
     def process_results(self, save: bool = True, overwrite: bool = True):
         """
         Process the results of the reactor.
