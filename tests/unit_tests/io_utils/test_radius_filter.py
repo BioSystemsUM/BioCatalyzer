@@ -145,6 +145,22 @@ class RadiusFilterTestCase(TestCase):
                 rules = Loaders.load_reaction_rules(path=path, radius=radius)
             self.assertEqual(len(rules), len(unfiltered))
 
+    def test_single_radius_per_rule(self):
+        """
+        A file where every rule has a single radius is still filtered correctly.
+
+        pandas infers such a Radii column as integers, so the loader must read it as
+        text; otherwise no rule matches and the whole rule set is silently dropped.
+        """
+        path = os.path.join(self._tmp.name, 'rules_single_radius.tsv')
+        pd.DataFrame([
+            {'InternalID': f'Rule_{r}', 'Reactants': 'Any', 'SMARTS': f'[C:{r + 1}]>>[C:{r + 1}]',
+             'EC_Numbers': '1.1.1.1', 'Organisms': 'eco', 'Radii': r}
+            for r in self.RADII
+        ]).to_csv(path, sep='\t', index=False)
+        rules = Loaders.load_reaction_rules(path=path, radius=6)
+        self.assertEqual(set(rules['InternalID']), {'Rule_6'})
+
     def test_parse_radius(self):
         """The radius specification is parsed from every accepted form."""
         self.assertEqual(Loaders._parse_radius(6), [6])
