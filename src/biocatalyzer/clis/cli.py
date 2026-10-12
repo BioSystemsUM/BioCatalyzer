@@ -112,7 +112,8 @@ def biocatalyzer_cli(compounds,
 
         output_path: Path to the output directory.
     """
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename=Path(output_path) / 'logging.log', level=logging.DEBUG)
     if reaction_rules is None:
         logging.info(f"Using default reaction rules file.")
         reaction_rules = DATA_FILES / "../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2"

@@ -91,6 +91,9 @@ def bioreactor_cli(compounds,
 
         output_path: Path to the output directory.
     """
+    # Configure logging before anything logs: a prior logging call makes basicConfig a no-op.
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename=Path(output_path) / 'logging.log', level=logging.DEBUG)
     if reaction_rules is None:
         reaction_rules = DATA_FILES / "../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2"
         reaction_rules = reaction_rules.resolve()
@@ -104,7 +107,6 @@ def bioreactor_cli(compounds,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
                     n_jobs=n_jobs)
-    logging.basicConfig(filename=f'{output_path}_logging.log', level=logging.DEBUG)
     br.react()
 
 
