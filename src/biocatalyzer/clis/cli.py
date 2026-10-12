@@ -42,7 +42,7 @@ DATA_FILES = Path(__file__).resolve().parent
               show_default=True,
               help="Radius of the reaction rules to use: an integer (6), a ;-separated list "
                    "('4;6;8') or an inclusive range ('4:8'). Only applied to rule sets that "
-                   "provide a 'Radius' column (e.g. RetroRules v3).",
+                   "provide a 'Radii' column (e.g. RetroRules v3).",
               )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",

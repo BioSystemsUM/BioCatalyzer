@@ -68,7 +68,7 @@ class Loaders:
             A rule is kept when any of these radii appears in its 'Radii' field, the
             same membership test already used for 'Organisms'. Only applied when the
             reaction rules file provides a 'Radii' column; rule sets without it
-            (e.g. the bundled ones) are left untouched.
+            are left untouched.
 
         Returns
         -------

@@ -53,7 +53,7 @@ class BioReactor:
         radius: Union[str, int]
             The radius (or radii) of the reaction rules to use: an integer (6), a
             ;-separated list ('4;6;8') or an inclusive range ('4:8'). 'ALL' disables
-            the filter. Only effective for rule sets that provide a 'Radius' column.
+            the filter. Only effective for rule sets that provide a 'Radii' column.
         molecules_to_remove_path: str
             The path to the file containing the molecules to remove from the products.
         patterns_to_remove_path: str

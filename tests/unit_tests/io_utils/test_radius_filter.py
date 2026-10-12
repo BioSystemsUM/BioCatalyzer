@@ -135,8 +135,8 @@ class RadiusFilterTestCase(TestCase):
         """
         Rule sets that declare no radii are returned unfiltered, with a warning.
 
-        This is what keeps the filter backwards compatible with the rule files
-        distributed with the tool, which carry no `Radii` column.
+        This is what keeps the filter backwards compatible with rule files that
+        carry no `Radii` column, such as the pre-RetroRules v3 ones.
         """
         path = os.path.join(TESTS_DATA_PATH, 'reaction_rules_sample/reactionrules.tsv')
         unfiltered = Loaders.load_reaction_rules(path=path)
