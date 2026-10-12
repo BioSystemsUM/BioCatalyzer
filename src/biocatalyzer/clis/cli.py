@@ -35,6 +35,15 @@ DATA_FILES = Path(__file__).resolve().parent
               default=None,
               help="The path to the user defined file containing the organisms to filter the reaction rules.",
               )
+@click.option("--radius",
+              "radius",
+              type=str,
+              default=6,
+              show_default=True,
+              help="Radius of the reaction rules to use: an integer (6), a ;-separated list "
+                   "('4;6;8') or an inclusive range ('4:8'). Only applied to rule sets that "
+                   "provide a 'Radii' column (e.g. RetroRules v3).",
+              )
 @click.option("--patterns_to_remove",
               "patterns_to_remove",
               type=str,
@@ -87,6 +96,7 @@ def biocatalyzer_cli(compounds,
                      neutralize,
                      reaction_rules,
                      organisms,
+                     radius,
                      patterns_to_remove,
                      molecules_to_remove,
                      min_atom_count,
@@ -102,7 +112,8 @@ def biocatalyzer_cli(compounds,
 
         output_path: Path to the output directory.
     """
-    logging.basicConfig(filename=f'{output_path}logging.log', level=logging.DEBUG)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+    logging.basicConfig(filename=Path(output_path) / 'logging.log', level=logging.DEBUG)
     if reaction_rules is None:
         logging.info(f"Using default reaction rules file.")
         reaction_rules = DATA_FILES / "../data/reactionrules/reaction_rules_biocatalyzer.tsv.bz2"
@@ -112,6 +123,7 @@ def biocatalyzer_cli(compounds,
                     reaction_rules_path=reaction_rules,
                     neutralize_compounds=neutralize,
                     organisms_path=organisms,
+                    radius=radius,
                     patterns_to_remove_path=patterns_to_remove,
                     molecules_to_remove_path=molecules_to_remove,
                     min_atom_count=min_atom_count,
