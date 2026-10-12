@@ -105,7 +105,7 @@ class Loaders:
             rules = rules[rules['has_org']]
             rules.drop('has_org', axis=1, inplace=True)
 
-        if not (isinstance(radius, str) and radius == 'ALL'):
+        if not (isinstance(radius, str) and radius.strip().upper() == 'ALL'):
             if 'Radii' not in rules.columns:
                 logging.warning(f"The radius filter (in effect: {radius}) was not applied: this "
                                 f"reaction rules file declares no 'Radii' column. All "
@@ -119,6 +119,8 @@ class Loaders:
                     return False
 
                 rules = rules[rules['Radii'].apply(lambda v: match_radius(v, radii))]
+                if len(rules) == 0:
+                    logging.warning(f'No reaction rules are modelled at radius in {sorted(radii)}.')
                 logging.info(f'Using {len(rules)} reaction rules modelled at radius in {sorted(radii)}.')
         return rules
 
@@ -141,11 +143,19 @@ class Loaders:
             return [radius]
         if isinstance(radius, (list, tuple)):
             return [int(r) for r in radius]
-        radius = str(radius).strip()
-        if ':' in radius:
-            start, end = radius.split(':')
-            return list(range(int(start), int(end) + 1))
-        return [int(r) for r in radius.split(';') if r != '']
+        spec = str(radius).strip()
+        try:
+            if ':' in spec:
+                start, end = (int(r) for r in spec.split(':'))
+                radii = list(range(start, end + 1))
+            else:
+                radii = [int(r) for r in spec.split(';') if r.strip() != '']
+        except ValueError:
+            radii = []
+        if not radii:
+            raise ValueError(f"Invalid radius '{radius}': expected 'ALL', an integer (6), "
+                             f"a ;-separated list ('4;6;8') or an ascending range ('4:8').")
+        return radii
 
     @staticmethod
     def load_organisms(path: str) -> Union[str, List[str]]:

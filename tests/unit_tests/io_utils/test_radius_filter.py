@@ -169,3 +169,20 @@ class RadiusFilterTestCase(TestCase):
         self.assertEqual(Loaders._parse_radius('4:8'), [4, 5, 6, 7, 8])
         self.assertEqual(Loaders._parse_radius('0:10'), list(range(11)))
         self.assertEqual(Loaders._parse_radius([2, 4]), [2, 4])
+
+    def test_invalid_radius_raises(self):
+        """Malformed specifications fail loudly instead of selecting no rules."""
+        for radius in ['8:4', 'abc', '', ';', '4:', '1:2:3']:
+            with self.assertRaises(ValueError, msg=f'{radius!r} was accepted'):
+                Loaders._parse_radius(radius)
+
+    def test_all_is_case_insensitive(self):
+        """'all' and ' All ' disable the filter like 'ALL'."""
+        for radius in ['all', ' All ']:
+            self.assertEqual(len(Loaders.load_reaction_rules(path=self.rules_path, radius=radius)), 11)
+
+    def test_empty_selection_warns(self):
+        """A valid radius that matches no rule logs a warning."""
+        with self.assertLogs(level='WARNING'):
+            rules = Loaders.load_reaction_rules(path=self.rules_path, radius=11)
+        self.assertEqual(len(rules), 0)
